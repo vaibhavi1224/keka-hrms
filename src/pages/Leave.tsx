@@ -1,14 +1,14 @@
 
 import React from 'react';
 import Layout from '@/components/layout/Layout';
-import Dashboard from '@/components/dashboard/Dashboard';
+import LeaveManagement from '@/components/leave/LeaveManagement';
 
-const Index = () => {
+const Leave = () => {
   return (
     <Layout userRole="HR" userName="John Doe">
-      <Dashboard />
+      <LeaveManagement />
     </Layout>
   );
 };
 
-export default Index;
+export default Leave;

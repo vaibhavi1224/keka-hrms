@@ -1,14 +1,14 @@
 
 import React from 'react';
 import Layout from '@/components/layout/Layout';
-import Dashboard from '@/components/dashboard/Dashboard';
+import EmployeeList from '@/components/employees/EmployeeList';
 
-const Index = () => {
+const Employees = () => {
   return (
     <Layout userRole="HR" userName="John Doe">
-      <Dashboard />
+      <EmployeeList />
     </Layout>
   );
 };
 
-export default Index;
+export default Employees;
