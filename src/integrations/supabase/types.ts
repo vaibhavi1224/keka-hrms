@@ -11,6 +11,8 @@ export type Database = {
     Tables: {
       attendance: {
         Row: {
+          biometric_verified: boolean | null
+          biometric_verified_out: boolean | null
           check_in_time: string | null
           check_out_time: string | null
           created_at: string
@@ -23,6 +25,8 @@ export type Database = {
           working_hours: number | null
         }
         Insert: {
+          biometric_verified?: boolean | null
+          biometric_verified_out?: boolean | null
           check_in_time?: string | null
           check_out_time?: string | null
           created_at?: string
@@ -35,6 +39,8 @@ export type Database = {
           working_hours?: number | null
         }
         Update: {
+          biometric_verified?: boolean | null
+          biometric_verified_out?: boolean | null
           check_in_time?: string | null
           check_out_time?: string | null
           created_at?: string
@@ -49,6 +55,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "attendance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      biometric_credentials: {
+        Row: {
+          counter: number
+          created_at: string
+          credential_id: string
+          id: string
+          public_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          counter?: number
+          created_at?: string
+          credential_id: string
+          id?: string
+          public_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          counter?: number
+          created_at?: string
+          credential_id?: string
+          id?: string
+          public_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "biometric_credentials_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"

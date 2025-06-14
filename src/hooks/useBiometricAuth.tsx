@@ -5,8 +5,12 @@ import { useToast } from '@/hooks/use-toast';
 
 interface BiometricCredential {
   id: string;
-  publicKey: string;
+  user_id: string;
+  credential_id: string;
+  public_key: string;
   counter: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export const useBiometricAuth = (userId: string) => {
@@ -86,15 +90,20 @@ export const useBiometricAuth = (userId: string) => {
 
       const response = credential.response as AuthenticatorAttestationResponse;
       
+      // Get the public key using the correct method
+      const publicKeyBuffer = response.getPublicKey();
+      if (!publicKeyBuffer) {
+        throw new Error('Failed to get public key from credential');
+      }
+      
       // Store credential in database
       const { error } = await supabase
         .from('biometric_credentials')
         .insert({
           user_id: userId,
-          credential_id: credential.id,
-          public_key: arrayBufferToBase64(response.publicKey!),
+          credential_id: arrayBufferToBase64(new Uint8Array(credential.rawId)),
+          public_key: arrayBufferToBase64(publicKeyBuffer),
           counter: 0,
-          created_at: new Date().toISOString()
         });
 
       if (error) throw error;
@@ -143,7 +152,7 @@ export const useBiometricAuth = (userId: string) => {
       const assertion = await navigator.credentials.get({
         publicKey: {
           challenge,
-          allowCredentials: credentials.map(cred => ({
+          allowCredentials: credentials.map((cred: BiometricCredential) => ({
             id: base64ToArrayBuffer(cred.credential_id),
             type: "public-key",
           })),
