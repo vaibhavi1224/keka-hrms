@@ -22,7 +22,7 @@ const AddEmployee = ({ onClose, onSuccess }: AddEmployeeProps) => {
     email: '',
     password: '',
     role: 'employee',
-    department: '',
+    department: 'no-department',
     designation: '',
     salary: '',
     date_of_joining: ''
@@ -56,7 +56,7 @@ const AddEmployee = ({ onClose, onSuccess }: AddEmployeeProps) => {
           email: formData.email,
           password: formData.password,
           role: formData.role,
-          department: formData.department,
+          department: formData.department === 'no-department' ? '' : formData.department,
           designation: formData.designation,
           salary: formData.salary,
           date_of_joining: formData.date_of_joining
@@ -101,7 +101,7 @@ const AddEmployee = ({ onClose, onSuccess }: AddEmployeeProps) => {
       email: '',
       password: '',
       role: 'employee',
-      department: '',
+      department: 'no-department',
       designation: '',
       salary: '',
       date_of_joining: ''
@@ -239,6 +239,7 @@ const AddEmployee = ({ onClose, onSuccess }: AddEmployeeProps) => {
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="no-department">No Department</SelectItem>
                   {departments.map((dept) => (
                     <SelectItem key={dept.id} value={dept.name}>
                       {dept.name}

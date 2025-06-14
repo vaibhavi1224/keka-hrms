@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, User, Mail, Phone, Building, Calendar, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,7 +28,7 @@ const EmployeeProfile = ({ employee, onClose, onUpdate }: EmployeeProfileProps) 
     date_of_joining: employee.date_of_joining || '',
     working_hours_start: employee.working_hours_start || '09:00',
     working_hours_end: employee.working_hours_end || '17:00',
-    manager_id: employee.manager_id || ''
+    manager_id: employee.manager_id || 'no-manager'
   });
 
   const { data: departments = [] } = useQuery({
@@ -71,7 +70,7 @@ const EmployeeProfile = ({ employee, onClose, onUpdate }: EmployeeProfileProps) 
           date_of_joining: formData.date_of_joining || null,
           working_hours_start: formData.working_hours_start || null,
           working_hours_end: formData.working_hours_end || null,
-          manager_id: formData.manager_id || null,
+          manager_id: formData.manager_id === 'no-manager' ? null : formData.manager_id,
           updated_at: new Date().toISOString()
         })
         .eq('id', employee.id);
@@ -209,7 +208,7 @@ const EmployeeProfile = ({ employee, onClose, onUpdate }: EmployeeProfileProps) 
                     <SelectValue placeholder="Select manager" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Manager</SelectItem>
+                    <SelectItem value="no-manager">No Manager</SelectItem>
                     {managers.map((manager) => (
                       <SelectItem key={manager.id} value={manager.id}>
                         {manager.first_name} {manager.last_name}
