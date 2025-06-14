@@ -1,11 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
-import { Clock, MapPin, Calendar } from 'lucide-react';
+import { Clock, MapPin, Calendar, Fingerprint } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import BiometricAuth from './BiometricAuth';
 
 const AttendanceTracker = () => {
   const { profile } = useProfile();
@@ -15,6 +15,9 @@ const AttendanceTracker = () => {
   const [checkOutTime, setCheckOutTime] = useState<string | null>(null);
   const [weeklyAttendance, setWeeklyAttendance] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showBiometric, setShowBiometric] = useState(false);
+  const [biometricAction, setBiometricAction] = useState<'checkin' | 'checkout'>('checkin');
+  const [useBiometric, setUseBiometric] = useState(false);
 
   const workingHours = {
     start: '09:00',
@@ -26,8 +29,14 @@ const AttendanceTracker = () => {
     if (profile?.id) {
       checkTodayAttendance();
       fetchWeeklyAttendance();
+      checkBiometricPreference();
     }
   }, [profile?.id]);
+
+  const checkBiometricPreference = () => {
+    const preference = localStorage.getItem('useBiometricAuth');
+    setUseBiometric(preference === 'true');
+  };
 
   const checkTodayAttendance = async () => {
     if (!profile?.id) return;
@@ -73,7 +82,7 @@ const AttendanceTracker = () => {
     }
   };
 
-  const handleCheckIn = async () => {
+  const performCheckIn = async () => {
     if (!profile?.id) return;
     
     setLoading(true);
@@ -87,16 +96,18 @@ const AttendanceTracker = () => {
           user_id: profile.id,
           date: today,
           check_in_time: now,
-          status: 'present'
+          status: 'present',
+          biometric_verified: showBiometric
         });
 
       if (error) throw error;
 
       setIsCheckedIn(true);
       setCheckInTime(new Date().toLocaleTimeString());
+      setShowBiometric(false);
       toast({
         title: "Clocked In Successfully",
-        description: `Clocked in at ${new Date().toLocaleTimeString()}`,
+        description: `Clocked in at ${new Date().toLocaleTimeString()}${showBiometric ? ' (Biometric Verified)' : ''}`,
       });
     } catch (error) {
       console.error('Clock in error:', error);
@@ -110,7 +121,7 @@ const AttendanceTracker = () => {
     }
   };
 
-  const handleCheckOut = async () => {
+  const performCheckOut = async () => {
     if (!profile?.id) return;
     
     setLoading(true);
@@ -122,7 +133,8 @@ const AttendanceTracker = () => {
         .from('attendance')
         .update({
           check_out_time: now,
-          updated_at: now
+          updated_at: now,
+          biometric_verified_out: showBiometric
         })
         .eq('user_id', profile.id)
         .eq('date', today);
@@ -131,9 +143,10 @@ const AttendanceTracker = () => {
 
       setIsCheckedIn(false);
       setCheckOutTime(new Date().toLocaleTimeString());
+      setShowBiometric(false);
       toast({
         title: "Clocked Out Successfully",
-        description: `Clocked out at ${new Date().toLocaleTimeString()}`,
+        description: `Clocked out at ${new Date().toLocaleTimeString()}${showBiometric ? ' (Biometric Verified)' : ''}`,
       });
     } catch (error) {
       console.error('Clock out error:', error);
@@ -145,6 +158,42 @@ const AttendanceTracker = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCheckIn = () => {
+    if (useBiometric) {
+      setBiometricAction('checkin');
+      setShowBiometric(true);
+    } else {
+      performCheckIn();
+    }
+  };
+
+  const handleCheckOut = () => {
+    if (useBiometric) {
+      setBiometricAction('checkout');
+      setShowBiometric(true);
+    } else {
+      performCheckOut();
+    }
+  };
+
+  const handleBiometricSuccess = () => {
+    if (biometricAction === 'checkin') {
+      performCheckIn();
+    } else {
+      performCheckOut();
+    }
+  };
+
+  const toggleBiometricPreference = () => {
+    const newPreference = !useBiometric;
+    setUseBiometric(newPreference);
+    localStorage.setItem('useBiometricAuth', newPreference.toString());
+    toast({
+      title: newPreference ? "Biometric Enabled" : "Biometric Disabled",
+      description: `Biometric authentication ${newPreference ? 'enabled' : 'disabled'} for attendance.`,
+    });
   };
 
   const calculateWorkedHours = () => {
@@ -162,14 +211,41 @@ const AttendanceTracker = () => {
     return Math.max(0, 8 - worked).toFixed(1);
   };
 
+  if (showBiometric) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Biometric Attendance</h1>
+          <p className="text-gray-600 mt-1">Secure attendance tracking with biometric verification.</p>
+        </div>
+        <div className="flex justify-center">
+          <BiometricAuth 
+            onSuccess={handleBiometricSuccess}
+            action={biometricAction}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
-        <p className="text-gray-600 mt-1">Track your daily attendance and working hours.</p>
-        <div className="mt-2 text-sm text-gray-500">
-          Office Hours: {workingHours.start} - {workingHours.end} | Monday - Friday
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
+          <p className="text-gray-600 mt-1">Track your daily attendance and working hours.</p>
+          <div className="mt-2 text-sm text-gray-500">
+            Office Hours: {workingHours.start} - {workingHours.end} | Monday - Friday
+          </div>
         </div>
+        <Button
+          variant={useBiometric ? "default" : "outline"}
+          onClick={toggleBiometricPreference}
+          className="flex items-center gap-2"
+        >
+          <Fingerprint className="w-4 h-4" />
+          Biometric {useBiometric ? 'ON' : 'OFF'}
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -200,8 +276,9 @@ const AttendanceTracker = () => {
                 <Button 
                   onClick={handleCheckIn}
                   disabled={loading}
-                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg"
+                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg flex items-center gap-2"
                 >
+                  {useBiometric && <Fingerprint className="w-4 h-4" />}
                   {loading ? 'Checking In...' : 'Check In'}
                 </Button>
               ) : (
@@ -213,8 +290,9 @@ const AttendanceTracker = () => {
                     onClick={handleCheckOut}
                     disabled={loading}
                     variant="destructive"
-                    className="px-8 py-3 text-lg"
+                    className="px-8 py-3 text-lg flex items-center gap-2"
                   >
+                    {useBiometric && <Fingerprint className="w-4 h-4" />}
                     {loading ? 'Checking Out...' : 'Check Out'}
                   </Button>
                 </div>
