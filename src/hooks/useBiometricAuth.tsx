@@ -1,17 +1,9 @@
 
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-
-interface BiometricCredential {
-  id: string;
-  user_id: string;
-  credential_id: string;
-  public_key: string;
-  counter: number;
-  created_at: string;
-  updated_at: string;
-}
+import { BiometricAuthState } from '@/types/biometric';
+import { checkWebAuthnSupport } from '@/utils/biometricUtils';
+import { BiometricService } from '@/services/biometricService';
 
 export const useBiometricAuth = (userId: string) => {
   const [isEnrolling, setIsEnrolling] = useState(false);
@@ -21,29 +13,9 @@ export const useBiometricAuth = (userId: string) => {
 
   // Check if WebAuthn is supported
   const checkSupport = () => {
-    const supported = !!(navigator.credentials && window.PublicKeyCredential);
+    const supported = checkWebAuthnSupport();
     setIsSupported(supported);
     return supported;
-  };
-
-  // Convert ArrayBuffer to base64
-  const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
-  };
-
-  // Convert base64 to ArrayBuffer
-  const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes.buffer;
   };
 
   // Enroll biometric credential
@@ -59,54 +31,12 @@ export const useBiometricAuth = (userId: string) => {
 
     setIsEnrolling(true);
     try {
-      // Generate challenge
-      const challenge = new Uint8Array(32);
-      crypto.getRandomValues(challenge);
-
-      const credential = await navigator.credentials.create({
-        publicKey: {
-          challenge,
-          rp: {
-            name: "HRMS Attendance",
-            id: window.location.hostname,
-          },
-          user: {
-            id: new TextEncoder().encode(userId),
-            name: userId,
-            displayName: "Employee",
-          },
-          pubKeyCredParams: [{ alg: -7, type: "public-key" }],
-          authenticatorSelection: {
-            authenticatorAttachment: "platform",
-            userVerification: "required",
-          },
-          timeout: 60000,
-        },
-      }) as PublicKeyCredential;
-
+      const credential = await BiometricService.createCredential(userId);
       if (!credential) {
         throw new Error('Failed to create credential');
       }
 
-      const response = credential.response as AuthenticatorAttestationResponse;
-      
-      // Get the public key using the correct method
-      const publicKeyBuffer = response.getPublicKey();
-      if (!publicKeyBuffer) {
-        throw new Error('Failed to get public key from credential');
-      }
-      
-      // Store credential in database
-      const { error } = await supabase
-        .from('biometric_credentials')
-        .insert({
-          user_id: userId,
-          credential_id: arrayBufferToBase64(new Uint8Array(credential.rawId)),
-          public_key: arrayBufferToBase64(publicKeyBuffer),
-          counter: 0,
-        });
-
-      if (error) throw error;
+      await BiometricService.storeCredential(userId, credential);
 
       toast({
         title: "Biometric Enrolled",
@@ -135,32 +65,12 @@ export const useBiometricAuth = (userId: string) => {
 
     setIsAuthenticating(true);
     try {
-      // Get stored credentials
-      const { data: credentials, error } = await supabase
-        .from('biometric_credentials')
-        .select('*')
-        .eq('user_id', userId);
-
-      if (error || !credentials || credentials.length === 0) {
+      const credentials = await BiometricService.getStoredCredentials(userId);
+      if (!credentials || credentials.length === 0) {
         throw new Error('No biometric credentials found');
       }
 
-      // Generate challenge
-      const challenge = new Uint8Array(32);
-      crypto.getRandomValues(challenge);
-
-      const assertion = await navigator.credentials.get({
-        publicKey: {
-          challenge,
-          allowCredentials: credentials.map((cred: BiometricCredential) => ({
-            id: base64ToArrayBuffer(cred.credential_id),
-            type: "public-key",
-          })),
-          userVerification: "required",
-          timeout: 60000,
-        },
-      }) as PublicKeyCredential;
-
+      const assertion = await BiometricService.authenticateCredential(credentials);
       if (!assertion) {
         throw new Error('Authentication failed');
       }
@@ -193,19 +103,7 @@ export const useBiometricAuth = (userId: string) => {
 
   // Check if user has enrolled biometrics
   const checkEnrollment = async (): Promise<boolean> => {
-    try {
-      const { data, error } = await supabase
-        .from('biometric_credentials')
-        .select('id')
-        .eq('user_id', userId)
-        .limit(1);
-
-      if (error) throw error;
-      return data && data.length > 0;
-    } catch (error) {
-      console.error('Error checking enrollment:', error);
-      return false;
-    }
+    return BiometricService.checkEnrollment(userId);
   };
 
   return {
