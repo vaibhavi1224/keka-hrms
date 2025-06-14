@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,7 @@ interface SalaryStructure {
     last_name: string;
     email: string;
     employee_id: string;
-  };
+  } | null;
 }
 
 const SalaryStructureManager = () => {
@@ -67,8 +68,18 @@ const SalaryStructureManager = () => {
       const { data, error } = await supabase
         .from('salary_structures')
         .select(`
-          *,
-          profiles:employee_id (
+          id,
+          employee_id,
+          basic_salary,
+          hra,
+          special_allowance,
+          transport_allowance,
+          medical_allowance,
+          other_allowances,
+          ctc,
+          effective_from,
+          is_active,
+          profiles!employee_id (
             first_name,
             last_name,
             email,
@@ -322,10 +333,10 @@ const SalaryStructureManager = () => {
                 <div className="flex justify-between items-start mb-3">
                   <div>
                     <h4 className="font-semibold">
-                      {structure.profiles.first_name} {structure.profiles.last_name}
+                      {structure.profiles?.first_name} {structure.profiles?.last_name}
                     </h4>
                     <p className="text-sm text-gray-600">
-                      {structure.profiles.employee_id || structure.profiles.email}
+                      {structure.profiles?.employee_id || structure.profiles?.email}
                     </p>
                     <p className="text-sm text-gray-500">
                       Effective from: {new Date(structure.effective_from).toLocaleDateString('en-IN')}

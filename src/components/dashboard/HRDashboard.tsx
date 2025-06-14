@@ -1,41 +1,20 @@
 
 import React, { useState } from 'react';
-import { Users, Clock, DollarSign, FileText, AlertCircle, Calendar, TrendingUp, CheckCircle, UserPlus, Mail } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import InviteEmployee from '@/components/hr/InviteEmployee';
 import { useInvitations } from '@/hooks/useInvitations';
+import HRMetrics from './hr/HRMetrics';
+import HRQuickActions from './hr/HRQuickActions';
+import HRPendingTasks from './hr/HRPendingTasks';
+import HRComplianceAlerts from './hr/HRComplianceAlerts';
+import HRDepartmentOverview from './hr/HRDepartmentOverview';
 
 const HRDashboard = () => {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const { invitations, refetch: refetchInvitations } = useInvitations();
 
-  const quickActions = [
-    { 
-      title: 'Add New Employee', 
-      color: 'bg-blue-600 hover:bg-blue-700', 
-      icon: UserPlus,
-      onClick: () => setShowInviteModal(true)
-    },
-    { title: 'Process Payroll', color: 'bg-green-600 hover:bg-green-700', icon: DollarSign },
-    { title: 'Generate Reports', color: 'bg-purple-600 hover:bg-purple-700', icon: FileText },
-    { title: 'Review Compliance', color: 'bg-orange-600 hover:bg-orange-700', icon: CheckCircle },
-  ];
-
   const pendingInvitations = invitations.filter(inv => inv.status === 'INVITED');
-  
-  const pendingTasks = [
-    { task: 'Review 8 pending leave requests', priority: 'high', count: 8 },
-    { task: 'Approve overtime for 12 employees', priority: 'medium', count: 12 },
-    { task: `Process ${pendingInvitations.length} pending invitations`, priority: 'high', count: pendingInvitations.length },
-    { task: 'Update 5 employee records', priority: 'low', count: 5 },
-  ];
-
-  const complianceAlerts = [
-    { type: 'Document Expiry', message: '15 work permits expiring this month', severity: 'warning' },
-    { type: 'Training Due', message: '23 employees need safety training', severity: 'info' },
-    { type: 'Policy Update', message: 'New labor law requires action', severity: 'urgent' },
-  ];
 
   const handleInviteSuccess = () => {
     refetchInvitations();
@@ -59,177 +38,18 @@ const HRDashboard = () => {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Employees</p>
-                <p className="text-3xl font-bold text-gray-900">248</p>
-                <p className="text-sm text-green-600 mt-1">+12 this month</p>
-              </div>
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <Users className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pending Invitations</p>
-                <p className="text-3xl font-bold text-gray-900">{pendingInvitations.length}</p>
-                <p className="text-sm text-orange-600 mt-1">Awaiting response</p>
-              </div>
-              <div className="bg-orange-50 p-3 rounded-lg">
-                <Mail className="w-6 h-6 text-orange-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Attendance Rate</p>
-                <p className="text-3xl font-bold text-gray-900">94.5%</p>
-                <p className="text-sm text-green-600 mt-1">+2.1% vs last month</p>
-              </div>
-              <div className="bg-green-50 p-3 rounded-lg">
-                <Clock className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Monthly Payroll</p>
-                <p className="text-3xl font-bold text-gray-900">$485K</p>
-                <p className="text-sm text-blue-600 mt-1">Due in 5 days</p>
-              </div>
-              <div className="bg-yellow-50 p-3 rounded-lg">
-                <DollarSign className="w-6 h-6 text-yellow-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <HRMetrics pendingInvitationsCount={pendingInvitations.length} />
 
       {/* Quick Actions & Pending Tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              {quickActions.map((action, index) => {
-                const Icon = action.icon;
-                return (
-                  <Button
-                    key={index}
-                    className={`${action.color} text-white p-4 h-auto flex flex-col items-center space-y-2`}
-                    onClick={action.onClick}
-                  >
-                    <Icon className="w-6 h-6" />
-                    <span className="text-sm font-medium text-center">{action.title}</span>
-                  </Button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending Tasks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {pendingTasks.map((task, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-3 h-3 rounded-full ${
-                      task.priority === 'high' ? 'bg-red-500' :
-                      task.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                    }`} />
-                    <span className="text-sm font-medium text-gray-900">{task.task}</span>
-                  </div>
-                  <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-                    {task.count}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <HRQuickActions onInviteEmployee={() => setShowInviteModal(true)} />
+        <HRPendingTasks pendingInvitationsCount={pendingInvitations.length} />
       </div>
 
       {/* Compliance Alerts & Department Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <AlertCircle className="w-5 h-5 text-orange-500" />
-              <span>Compliance Alerts</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {complianceAlerts.map((alert, index) => (
-                <div key={index} className={`p-4 rounded-lg border-l-4 ${
-                  alert.severity === 'urgent' ? 'bg-red-50 border-red-500' :
-                  alert.severity === 'warning' ? 'bg-yellow-50 border-yellow-500' :
-                  'bg-blue-50 border-blue-500'
-                }`}>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium text-gray-900">{alert.type}</p>
-                      <p className="text-sm text-gray-600 mt-1">{alert.message}</p>
-                    </div>
-                    <Button size="sm" variant="outline">View</Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Department Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                { dept: 'Engineering', employees: 85, attendance: '96%', color: 'bg-blue-500' },
-                { dept: 'Sales', employees: 42, attendance: '92%', color: 'bg-green-500' },
-                { dept: 'Marketing', employees: 28, attendance: '94%', color: 'bg-purple-500' },
-                { dept: 'Support', employees: 35, attendance: '98%', color: 'bg-orange-500' },
-              ].map((dept, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-4 h-4 rounded ${dept.color}`} />
-                    <div>
-                      <p className="font-medium text-gray-900">{dept.dept}</p>
-                      <p className="text-sm text-gray-600">{dept.employees} employees</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-gray-900">{dept.attendance}</p>
-                    <p className="text-sm text-gray-600">attendance</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <HRComplianceAlerts />
+        <HRDepartmentOverview />
       </div>
 
       {/* Invite Employee Modal */}
