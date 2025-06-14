@@ -138,7 +138,7 @@ const AddEmployee = ({ onClose, onSuccess }: AddEmployeeProps) => {
   if (generatedCredentials) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
           <CardHeader>
             <CardTitle className="text-green-600">Employee Created Successfully!</CardTitle>
           </CardHeader>
@@ -172,8 +172,8 @@ const AddEmployee = ({ onClose, onSuccess }: AddEmployeeProps) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="flex flex-row items-center justify-between">
+      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle className="flex items-center gap-2">
             <UserPlus className="w-5 h-5" />
             Add New Employee
@@ -182,7 +182,7 @@ const AddEmployee = ({ onClose, onSuccess }: AddEmployeeProps) => {
             <X className="w-4 h-4" />
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="name" className="flex items-center gap-2">
@@ -235,7 +235,7 @@ const AddEmployee = ({ onClose, onSuccess }: AddEmployeeProps) => {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
                 </div>
-                <Button type="button" variant="outline" onClick={generatePassword}>
+                <Button type="button" variant="outline" onClick={generatePassword} className="shrink-0">
                   Generate
                 </Button>
               </div>
