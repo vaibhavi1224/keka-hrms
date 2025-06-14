@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { BiometricCredential } from '@/types/biometric';
 import { arrayBufferToBase64, base64ToArrayBuffer } from '@/utils/biometricUtils';
@@ -9,6 +8,11 @@ export class BiometricService {
       // Check if WebAuthn is supported
       if (!window.PublicKeyCredential) {
         throw new Error('WebAuthn is not supported in this browser');
+      }
+
+      // Check if we're in a secure context
+      if (!window.isSecureContext) {
+        throw new Error('Biometric authentication requires HTTPS');
       }
 
       // Generate a more robust challenge
@@ -36,11 +40,12 @@ export class BiometricService {
           ],
           authenticatorSelection: {
             authenticatorAttachment: "platform",
-            userVerification: "required",
+            userVerification: "preferred", // Changed from "required" to "preferred"
             requireResidentKey: false,
           },
-          timeout: 60000,
+          timeout: 120000, // Increased timeout to 2 minutes
           attestation: "none",
+          excludeCredentials: [], // Prevent duplicate credentials
         },
       };
 
@@ -49,7 +54,7 @@ export class BiometricService {
       const credential = await navigator.credentials.create(credentialCreationOptions) as PublicKeyCredential;
       
       if (!credential) {
-        throw new Error('Failed to create credential - user may have cancelled or device not supported');
+        throw new Error('User cancelled credential creation or device not supported');
       }
 
       console.log('WebAuthn credential created successfully:', credential);
@@ -57,17 +62,23 @@ export class BiometricService {
     } catch (error: any) {
       console.error('Error creating WebAuthn credential:', error);
       
-      // Provide more specific error messages
+      // Provide more specific error messages based on error type
       if (error.name === 'NotSupportedError') {
-        throw new Error('Biometric authentication is not supported on this device');
+        throw new Error('Your device does not support biometric authentication');
       } else if (error.name === 'NotAllowedError') {
-        throw new Error('Biometric authentication was cancelled or not allowed');
+        throw new Error('Biometric authentication permission was denied. Please allow biometric access and try again.');
       } else if (error.name === 'InvalidStateError') {
-        throw new Error('A credential for this device already exists');
+        throw new Error('A biometric credential already exists for this device. Please try authenticating instead.');
       } else if (error.name === 'ConstraintError') {
-        throw new Error('The device does not meet the security requirements');
+        throw new Error('Your device does not meet the security requirements for biometric authentication');
+      } else if (error.name === 'SecurityError') {
+        throw new Error('Security error: Please ensure you are using HTTPS and try again');
+      } else if (error.name === 'AbortError') {
+        throw new Error('Biometric enrollment was cancelled. Please try again when ready.');
+      } else if (error.message && error.message.includes('cancelled')) {
+        throw new Error('Biometric enrollment was cancelled. Please complete the enrollment process to continue.');
       } else {
-        throw new Error(`Biometric enrollment failed: ${error.message || 'Unknown error'}`);
+        throw new Error(`Biometric enrollment failed: ${error.message || 'Please ensure your device supports biometric authentication and try again'}`);
       }
     }
   }

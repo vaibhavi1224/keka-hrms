@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Fingerprint, Shield, AlertCircle, Loader2 } from 'lucide-react';
+import { Fingerprint, Shield, AlertCircle, Loader2, RefreshCw, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useBiometricAuth } from '@/hooks/useBiometricAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { useToast } from '@/hooks/use-toast';
 
 interface BiometricAuthProps {
   onSuccess: () => void;
@@ -13,9 +14,12 @@ interface BiometricAuthProps {
 
 const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
   const { profile } = useProfile();
+  const { toast } = useToast();
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [showEnrollment, setShowEnrollment] = useState(false);
   const [checkingSupport, setCheckingSupport] = useState(true);
+  const [enrollmentAttempts, setEnrollmentAttempts] = useState(0);
+  const [showTroubleshooting, setShowTroubleshooting] = useState(false);
 
   const {
     isSupported,
@@ -49,10 +53,20 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
   }, [profile?.id]);
 
   const handleEnroll = async () => {
+    const newAttemptCount = enrollmentAttempts + 1;
+    setEnrollmentAttempts(newAttemptCount);
+    
     const success = await enrollBiometric();
     if (success) {
       setIsEnrolled(true);
       setShowEnrollment(false);
+      setEnrollmentAttempts(0);
+      toast({
+        title: "Success!",
+        description: "Biometric authentication has been set up successfully.",
+      });
+    } else if (newAttemptCount >= 2) {
+      setShowTroubleshooting(true);
     }
   };
 
@@ -61,6 +75,11 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
     if (success) {
       onSuccess();
     }
+  };
+
+  const handleRetryEnrollment = () => {
+    setEnrollmentAttempts(0);
+    setShowTroubleshooting(false);
   };
 
   // Show loading while checking support
@@ -104,6 +123,47 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
             </ul>
             <Button onClick={onSuccess} className="w-full">
               Continue with Regular {action === 'checkin' ? 'Check In' : 'Check Out'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show troubleshooting after multiple failed attempts
+  if (showTroubleshooting) {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <HelpCircle className="w-5 h-5 text-blue-500" />
+            Troubleshooting Biometric Setup
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Having trouble with biometric enrollment? Try these steps:
+          </p>
+          <ul className="text-sm text-gray-600 list-disc pl-5 space-y-2">
+            <li>Make sure your browser allows biometric access</li>
+            <li>Ensure your biometric sensor is clean and working</li>
+            <li>Try refreshing the page and starting over</li>
+            <li>Check that you're using a supported browser (Chrome, Edge, Safari)</li>
+          </ul>
+          <div className="space-y-2">
+            <Button 
+              onClick={handleRetryEnrollment} 
+              className="w-full"
+              variant="outline"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
+            <Button 
+              onClick={onSuccess} 
+              className="w-full"
+            >
+              Skip Biometric Setup
             </Button>
           </div>
         </CardContent>
@@ -157,9 +217,19 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="bg-blue-50 p-3 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Important:</strong> When prompted, allow your browser to access your biometric sensor and complete the full enrollment process.
+            </p>
+          </div>
           <p className="text-sm text-gray-600">
             Follow your device's prompts to register your biometric data. Make sure to use the same method you'll use for future check-ins.
           </p>
+          {enrollmentAttempts > 0 && (
+            <p className="text-sm text-amber-600">
+              Attempt {enrollmentAttempts + 1} - Please ensure you complete the full enrollment process.
+            </p>
+          )}
           <div className="space-y-2">
             <Button 
               onClick={handleEnroll} 
