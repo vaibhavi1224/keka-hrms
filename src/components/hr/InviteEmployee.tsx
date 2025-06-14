@@ -35,6 +35,12 @@ const InviteEmployee = ({ onClose, onSuccess }: InviteEmployeeProps) => {
     setLoading(true);
 
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const inviteData = {
         name: formData.name,
         email: formData.email,
@@ -42,12 +48,13 @@ const InviteEmployee = ({ onClose, onSuccess }: InviteEmployeeProps) => {
         department: formData.department || null,
         designation: formData.designation || null,
         date_of_joining: formData.dateOfJoining || null,
-        salary: formData.salary ? parseFloat(formData.salary) : null
+        salary: formData.salary ? parseFloat(formData.salary) : null,
+        invited_by: user.id
       };
 
       const { data, error: insertError } = await supabase
         .from('invitations')
-        .insert([inviteData])
+        .insert(inviteData)
         .select()
         .single();
 
