@@ -11,7 +11,7 @@ interface EmployeeProfileFormData {
   phone: string;
   department: string;
   designation: string;
-  role: string;
+  role: 'hr' | 'manager' | 'employee';
   date_of_joining: string;
   working_hours_start: string;
   working_hours_end: string;
@@ -90,7 +90,10 @@ export const useEmployeeProfile = (employee: any, onUpdate: () => void) => {
   });
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => ({ 
+      ...prev, 
+      [field]: field === 'role' ? value as 'hr' | 'manager' | 'employee' : value 
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
