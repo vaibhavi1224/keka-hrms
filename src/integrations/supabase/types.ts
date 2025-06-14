@@ -539,6 +539,7 @@ export type Database = {
           last_working_date: string | null
           manager_id: string | null
           phone: string | null
+          profile_picture: string | null
           role: Database["public"]["Enums"]["user_role"]
           status: string | null
           updated_at: string
@@ -562,6 +563,7 @@ export type Database = {
           last_working_date?: string | null
           manager_id?: string | null
           phone?: string | null
+          profile_picture?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           status?: string | null
           updated_at?: string
@@ -585,6 +587,7 @@ export type Database = {
           last_working_date?: string | null
           manager_id?: string | null
           phone?: string | null
+          profile_picture?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           status?: string | null
           updated_at?: string

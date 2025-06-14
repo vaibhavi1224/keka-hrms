@@ -1,11 +1,11 @@
 
 import React from 'react';
-import { Clock, Calendar, DollarSign, Award } from 'lucide-react';
+import { Clock, Calendar, DollarSign, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import ProfileUpdateDialog from '@/components/profile/ProfileUpdateDialog';
 
 const QuickActions = () => {
   const navigate = useNavigate();
@@ -21,13 +21,6 @@ const QuickActions = () => {
 
   const handleViewPayslip = () => {
     navigate('/payroll');
-  };
-
-  const handleUpdateProfile = () => {
-    toast({
-      title: "Profile Update",
-      description: "Profile management feature will be available soon.",
-    });
   };
 
   const quickActions = [
@@ -51,13 +44,6 @@ const QuickActions = () => {
       color: 'bg-purple-600 hover:bg-purple-700', 
       icon: DollarSign,
       action: handleViewPayslip
-    },
-    { 
-      title: 'Update Profile', 
-      subtitle: 'Manage details', 
-      color: 'bg-orange-600 hover:bg-orange-700', 
-      icon: Award,
-      action: handleUpdateProfile
     },
   ];
 
@@ -84,6 +70,16 @@ const QuickActions = () => {
               </Button>
             );
           })}
+          
+          <ProfileUpdateDialog>
+            <Button className="bg-orange-600 hover:bg-orange-700 text-white p-4 h-auto flex flex-col items-center space-y-2">
+              <User className="w-6 h-6" />
+              <div className="text-center">
+                <div className="text-sm font-medium">Update Profile</div>
+                <div className="text-xs opacity-90">Manage details</div>
+              </div>
+            </Button>
+          </ProfileUpdateDialog>
         </div>
       </CardContent>
     </Card>

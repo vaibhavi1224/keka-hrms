@@ -16,6 +16,7 @@ interface Profile {
   date_of_joining: string | null;
   manager_id: string | null;
   is_active: boolean;
+  profile_picture: string | null;
 }
 
 export const useProfile = () => {
@@ -24,35 +25,41 @@ export const useProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchProfile = async () => {
+    if (!user) {
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        setError(error.message);
+      } else {
+        setProfile(data);
+        setError(null);
+      }
+    } catch (err) {
+      setError('Failed to fetch profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user) {
-        setProfile(null);
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          setError(error.message);
-        } else {
-          setProfile(data);
-        }
-      } catch (err) {
-        setError('Failed to fetch profile');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProfile();
   }, [user]);
 
-  return { profile, loading, error, refetch: () => setLoading(true) };
+  const refetch = () => {
+    fetchProfile();
+  };
+
+  return { profile, loading, error, refetch };
 };
