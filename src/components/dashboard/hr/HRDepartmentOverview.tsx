@@ -7,7 +7,9 @@ const HRDepartmentOverview = () => {
     { dept: 'Engineering', employees: 85, attendance: '96%', color: 'bg-blue-500' },
     { dept: 'Sales', employees: 42, attendance: '92%', color: 'bg-green-500' },
     { dept: 'Marketing', employees: 28, attendance: '94%', color: 'bg-purple-500' },
-    { dept: 'Support', employees: 35, attendance: '98%', color: 'bg-orange-500' },
+    { dept: 'Human Resources', employees: 12, attendance: '98%', color: 'bg-orange-500' },
+    { dept: 'Finance', employees: 18, attendance: '95%', color: 'bg-red-500' },
+    { dept: 'Operations', employees: 35, attendance: '97%', color: 'bg-teal-500' },
   ];
 
   return (
