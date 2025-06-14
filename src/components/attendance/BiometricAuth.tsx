@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Fingerprint, Shield, AlertCircle } from 'lucide-react';
+import { Fingerprint, Shield, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useBiometricAuth } from '@/hooks/useBiometricAuth';
@@ -15,6 +15,7 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
   const { profile } = useProfile();
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [showEnrollment, setShowEnrollment] = useState(false);
+  const [checkingSupport, setCheckingSupport] = useState(true);
 
   const {
     isSupported,
@@ -27,16 +28,25 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
   } = useBiometricAuth(profile?.id || '');
 
   useEffect(() => {
-    if (profile?.id) {
-      checkSupport();
-      checkEnrollmentStatus();
-    }
-  }, [profile?.id]);
+    const initializeBiometric = async () => {
+      if (profile?.id) {
+        setCheckingSupport(true);
+        
+        // Check if WebAuthn is supported
+        const supported = checkSupport();
+        
+        if (supported) {
+          // Check if user is already enrolled
+          const enrolled = await checkEnrollment();
+          setIsEnrolled(enrolled);
+        }
+        
+        setCheckingSupport(false);
+      }
+    };
 
-  const checkEnrollmentStatus = async () => {
-    const enrolled = await checkEnrollment();
-    setIsEnrolled(enrolled);
-  };
+    initializeBiometric();
+  }, [profile?.id]);
 
   const handleEnroll = async () => {
     const success = await enrollBiometric();
@@ -53,6 +63,26 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
     }
   };
 
+  // Show loading while checking support
+  if (checkingSupport) {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Checking Biometric Support
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600">
+            Checking if your device supports biometric authentication...
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show not supported message
   if (!isSupported) {
     return (
       <Card className="w-full max-w-md mx-auto">
@@ -63,17 +93,25 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-600 mb-4">
-            Your device doesn't support biometric authentication. Please use the regular attendance method.
-          </p>
-          <Button onClick={onSuccess} className="w-full">
-            Continue with Regular {action === 'checkin' ? 'Check In' : 'Check Out'}
-          </Button>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Your device or browser doesn't support biometric authentication. This could be because:
+            </p>
+            <ul className="text-sm text-gray-600 list-disc pl-5 space-y-1">
+              <li>You're not using HTTPS (required for security)</li>
+              <li>Your browser doesn't support WebAuthn</li>
+              <li>Your device doesn't have biometric sensors</li>
+            </ul>
+            <Button onClick={onSuccess} className="w-full">
+              Continue with Regular {action === 'checkin' ? 'Check In' : 'Check Out'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
   }
 
+  // Show enrollment setup
   if (!isEnrolled && !showEnrollment) {
     return (
       <Card className="w-full max-w-md mx-auto">
@@ -85,7 +123,7 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-gray-600">
-            Secure your attendance with biometric authentication. Use your fingerprint or face recognition for quick and secure check-ins.
+            Secure your attendance with biometric authentication. Use your fingerprint, face recognition, or other biometric methods for quick and secure check-ins.
           </p>
           <div className="space-y-2">
             <Button 
@@ -108,6 +146,7 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
     );
   }
 
+  // Show enrollment process
   if (showEnrollment) {
     return (
       <Card className="w-full max-w-md mx-auto">
@@ -119,7 +158,7 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-gray-600">
-            Follow your device's prompts to register your biometric data. This will be used for secure attendance tracking.
+            Follow your device's prompts to register your biometric data. Make sure to use the same method you'll use for future check-ins.
           </p>
           <div className="space-y-2">
             <Button 
@@ -127,11 +166,19 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
               disabled={isEnrolling}
               className="w-full"
             >
-              {isEnrolling ? 'Enrolling...' : 'Start Enrollment'}
+              {isEnrolling ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Enrolling...
+                </>
+              ) : (
+                'Start Enrollment'
+              )}
             </Button>
             <Button 
               variant="outline" 
               onClick={() => setShowEnrollment(false)} 
+              disabled={isEnrolling}
               className="w-full"
             >
               Cancel
@@ -142,6 +189,7 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
     );
   }
 
+  // Show authentication
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
@@ -164,11 +212,19 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
             disabled={isAuthenticating}
             className="w-full"
           >
-            {isAuthenticating ? 'Authenticating...' : `Biometric ${action === 'checkin' ? 'Check In' : 'Check Out'}`}
+            {isAuthenticating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Authenticating...
+              </>
+            ) : (
+              `Biometric ${action === 'checkin' ? 'Check In' : 'Check Out'}`
+            )}
           </Button>
           <Button 
             variant="outline" 
             onClick={onSuccess} 
+            disabled={isAuthenticating}
             className="w-full"
           >
             Use Regular Method

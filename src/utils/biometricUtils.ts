@@ -19,7 +19,48 @@ export const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
   return bytes.buffer;
 };
 
-// Check if WebAuthn is supported
+// Check if WebAuthn is supported with more comprehensive checks
 export const checkWebAuthnSupport = (): boolean => {
-  return !!(navigator.credentials && window.PublicKeyCredential);
+  try {
+    // Check for basic WebAuthn support
+    if (!window.PublicKeyCredential) {
+      console.log('WebAuthn not supported: PublicKeyCredential not available');
+      return false;
+    }
+
+    // Check for navigator.credentials
+    if (!navigator.credentials) {
+      console.log('WebAuthn not supported: navigator.credentials not available');
+      return false;
+    }
+
+    // Check if running in secure context (HTTPS or localhost)
+    if (!window.isSecureContext) {
+      console.log('WebAuthn not supported: not in secure context (HTTPS required)');
+      return false;
+    }
+
+    console.log('WebAuthn is supported');
+    return true;
+  } catch (error) {
+    console.error('Error checking WebAuthn support:', error);
+    return false;
+  }
+};
+
+// Additional utility to check for platform authenticator support
+export const checkPlatformAuthenticatorSupport = async (): Promise<boolean> => {
+  try {
+    if (!checkWebAuthnSupport()) {
+      return false;
+    }
+
+    // Check if platform authenticator is available
+    const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    console.log('Platform authenticator available:', available);
+    return available;
+  } catch (error) {
+    console.error('Error checking platform authenticator support:', error);
+    return false;
+  }
 };
