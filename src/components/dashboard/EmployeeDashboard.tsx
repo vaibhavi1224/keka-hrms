@@ -1,13 +1,113 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Clock, Calendar, DollarSign, TrendingUp, CheckCircle, AlertCircle, MapPin, Award } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/hooks/useProfile';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const EmployeeDashboard = () => {
   const { profile } = useProfile();
+  const { toast } = useToast();
+  const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [loading, setLoading] = useState(false);
   
   const firstName = profile?.first_name || 'User';
+
+  const handleClockIn = async () => {
+    if (!profile?.id) return;
+    
+    setLoading(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const now = new Date().toISOString();
+      
+      // Check if already clocked in today
+      const { data: existingAttendance } = await supabase
+        .from('attendance')
+        .select('*')
+        .eq('user_id', profile.id)
+        .eq('date', today)
+        .single();
+
+      if (existingAttendance && existingAttendance.check_in_time) {
+        toast({
+          title: "Already Clocked In",
+          description: "You have already clocked in today.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Create or update attendance record
+      const { error } = await supabase
+        .from('attendance')
+        .upsert({
+          user_id: profile.id,
+          date: today,
+          check_in_time: now,
+          status: 'present'
+        });
+
+      if (error) throw error;
+
+      setIsCheckedIn(true);
+      toast({
+        title: "Clocked In Successfully",
+        description: `Clocked in at ${new Date().toLocaleTimeString()}`,
+      });
+    } catch (error) {
+      console.error('Clock in error:', error);
+      toast({
+        title: "Clock In Failed",
+        description: "Failed to clock in. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClockOut = async () => {
+    if (!profile?.id) return;
+    
+    setLoading(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const now = new Date().toISOString();
+      
+      const { error } = await supabase
+        .from('attendance')
+        .update({
+          check_out_time: now,
+          updated_at: now
+        })
+        .eq('user_id', profile.id)
+        .eq('date', today);
+
+      if (error) throw error;
+
+      setIsCheckedIn(false);
+      toast({
+        title: "Clocked Out Successfully",
+        description: `Clocked out at ${new Date().toLocaleTimeString()}`,
+      });
+    } catch (error) {
+      console.error('Clock out error:', error);
+      toast({
+        title: "Clock Out Failed",
+        description: "Failed to clock out. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewTimesheet = () => {
+    // Navigate to attendance page
+    window.location.href = '/attendance';
+  };
 
   const personalStats = [
     { label: 'Hours This Week', value: '38.5', target: '40', icon: Clock, color: 'blue' },
@@ -50,13 +150,31 @@ const EmployeeDashboard = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Welcome back, {firstName}!</h1>
           <p className="text-gray-600 mt-1">Here's your personal dashboard and today's overview</p>
+          <div className="mt-2 text-sm text-gray-500">
+            Office Hours: 9:00 AM - 5:00 PM | Monday - Friday
+          </div>
         </div>
         <div className="flex space-x-3">
-          <Button className="bg-green-600 hover:bg-green-700 text-white">
-            <MapPin className="w-4 h-4 mr-2" />
-            Clock In
-          </Button>
-          <Button variant="outline">
+          {!isCheckedIn ? (
+            <Button 
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleClockIn}
+              disabled={loading}
+            >
+              <MapPin className="w-4 h-4 mr-2" />
+              {loading ? 'Clocking In...' : 'Clock In'}
+            </Button>
+          ) : (
+            <Button 
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleClockOut}
+              disabled={loading}
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              {loading ? 'Clocking Out...' : 'Clock Out'}
+            </Button>
+          )}
+          <Button variant="outline" onClick={handleViewTimesheet}>
             <Clock className="w-4 h-4 mr-2" />
             View Timesheet
           </Button>
@@ -234,6 +352,15 @@ const EmployeeDashboard = () => {
               <div className="text-2xl font-bold text-purple-600">8</div>
               <div className="text-sm text-gray-600">Tasks Completed</div>
               <div className="text-xs text-purple-600 mt-1">Above target</div>
+            </div>
+          </div>
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+            <div className="text-sm font-medium text-gray-700">Work Schedule</div>
+            <div className="text-xs text-gray-600 mt-1">
+              Monday - Friday: 9:00 AM - 5:00 PM (40 hours/week)
+            </div>
+            <div className="text-xs text-gray-600">
+              Saturday - Sunday: Holiday
             </div>
           </div>
         </CardContent>
