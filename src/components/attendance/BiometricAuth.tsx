@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Fingerprint, Shield, AlertCircle, Loader2, RefreshCw, HelpCircle } from 'lucide-react';
+import { Fingerprint, Shield, AlertCircle, Loader2, RefreshCw, HelpCircle, Settings, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useBiometricAuth } from '@/hooks/useBiometricAuth';
@@ -20,6 +20,7 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
   const [checkingSupport, setCheckingSupport] = useState(true);
   const [enrollmentAttempts, setEnrollmentAttempts] = useState(0);
   const [showTroubleshooting, setShowTroubleshooting] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
 
   const {
     isSupported,
@@ -61,6 +62,7 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
       setIsEnrolled(true);
       setShowEnrollment(false);
       setEnrollmentAttempts(0);
+      setShowTroubleshooting(false);
       toast({
         title: "Success!",
         description: "Biometric authentication has been set up successfully.",
@@ -80,6 +82,12 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
   const handleRetryEnrollment = () => {
     setEnrollmentAttempts(0);
     setShowTroubleshooting(false);
+    setShowInstructions(true);
+  };
+
+  const handleStartEnrollment = () => {
+    setShowInstructions(false);
+    setShowEnrollment(true);
   };
 
   // Show loading while checking support
@@ -118,11 +126,46 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
             </p>
             <ul className="text-sm text-gray-600 list-disc pl-5 space-y-1">
               <li>You're not using HTTPS (required for security)</li>
-              <li>Your browser doesn't support WebAuthn</li>
-              <li>Your device doesn't have biometric sensors</li>
+              <li>Your browser doesn't support WebAuthn (try Chrome, Edge, or Safari)</li>
+              <li>Your device doesn't have biometric sensors enabled</li>
+              <li>Biometric authentication is disabled in browser settings</li>
             </ul>
             <Button onClick={onSuccess} className="w-full">
               Continue with Regular {action === 'checkin' ? 'Check In' : 'Check Out'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show pre-enrollment instructions
+  if (showInstructions) {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="w-5 h-5 text-blue-500" />
+            Before You Start
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-blue-800 mb-2">Important Steps:</h4>
+            <ol className="text-sm text-blue-700 list-decimal pl-4 space-y-1">
+              <li>Make sure your biometric sensor is clean and working</li>
+              <li>When prompted, click "Allow" or "Yes" for biometric access</li>
+              <li>Complete the full enrollment process - don't cancel halfway</li>
+              <li>Follow your device's specific instructions (fingerprint/face scan)</li>
+            </ol>
+          </div>
+          <div className="space-y-2">
+            <Button onClick={handleStartEnrollment} className="w-full">
+              <CheckCircle className="w-4 h-4 mr-2" />
+              I'm Ready - Start Enrollment
+            </Button>
+            <Button variant="outline" onClick={onSuccess} className="w-full">
+              Skip Biometric Setup
             </Button>
           </div>
         </CardContent>
@@ -141,14 +184,18 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-gray-600">
-            Having trouble with biometric enrollment? Try these steps:
-          </p>
+          <div className="bg-yellow-50 p-3 rounded-lg">
+            <p className="text-sm text-yellow-800 font-semibold mb-2">
+              Having trouble? Try these steps:
+            </p>
+          </div>
           <ul className="text-sm text-gray-600 list-disc pl-5 space-y-2">
-            <li>Make sure your browser allows biometric access</li>
-            <li>Ensure your biometric sensor is clean and working</li>
-            <li>Try refreshing the page and starting over</li>
-            <li>Check that you're using a supported browser (Chrome, Edge, Safari)</li>
+            <li><strong>Browser Settings:</strong> Ensure biometric authentication is enabled in your browser</li>
+            <li><strong>Device Settings:</strong> Check that fingerprint/face recognition is set up in your device settings</li>
+            <li><strong>Clean Sensors:</strong> Make sure your biometric sensor is clean and working</li>
+            <li><strong>Allow Permission:</strong> When prompted, always click "Allow" for biometric access</li>
+            <li><strong>Complete Process:</strong> Don't cancel or close the enrollment dialog</li>
+            <li><strong>Supported Browsers:</strong> Use Chrome, Edge, Safari, or Firefox</li>
           </ul>
           <div className="space-y-2">
             <Button 
@@ -157,7 +204,7 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
               variant="outline"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
-              Try Again
+              Try Again with Instructions
             </Button>
             <Button 
               onClick={onSuccess} 
@@ -187,7 +234,7 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
           </p>
           <div className="space-y-2">
             <Button 
-              onClick={() => setShowEnrollment(true)} 
+              onClick={() => setShowInstructions(true)} 
               className="w-full"
             >
               <Fingerprint className="w-4 h-4 mr-2" />
@@ -217,18 +264,17 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-blue-50 p-3 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Important:</strong> When prompted, allow your browser to access your biometric sensor and complete the full enrollment process.
+          <div className="bg-green-50 p-3 rounded-lg">
+            <p className="text-sm text-green-800">
+              <strong>Ready to enroll!</strong> When prompted, allow biometric access and follow your device's instructions carefully.
             </p>
           </div>
-          <p className="text-sm text-gray-600">
-            Follow your device's prompts to register your biometric data. Make sure to use the same method you'll use for future check-ins.
-          </p>
           {enrollmentAttempts > 0 && (
-            <p className="text-sm text-amber-600">
-              Attempt {enrollmentAttempts + 1} - Please ensure you complete the full enrollment process.
-            </p>
+            <div className="bg-amber-50 p-3 rounded-lg">
+              <p className="text-sm text-amber-700">
+                <strong>Attempt {enrollmentAttempts + 1}:</strong> Make sure to click "Allow" when prompted and complete the full process.
+              </p>
+            </div>
           )}
           <div className="space-y-2">
             <Button 
@@ -251,7 +297,7 @@ const BiometricAuth = ({ onSuccess, action }: BiometricAuthProps) => {
               disabled={isEnrolling}
               className="w-full"
             >
-              Cancel
+              Back
             </Button>
           </div>
         </CardContent>

@@ -15,6 +15,16 @@ export class BiometricService {
         throw new Error('Biometric authentication requires HTTPS');
       }
 
+      // Check for platform authenticator availability first
+      try {
+        const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        if (!available) {
+          throw new Error('No biometric sensors are available on this device');
+        }
+      } catch (error) {
+        console.warn('Could not check platform authenticator availability:', error);
+      }
+
       // Generate a more robust challenge
       const challenge = new Uint8Array(32);
       crypto.getRandomValues(challenge);
@@ -40,10 +50,10 @@ export class BiometricService {
           ],
           authenticatorSelection: {
             authenticatorAttachment: "platform",
-            userVerification: "preferred", // Changed from "required" to "preferred"
+            userVerification: "preferred",
             requireResidentKey: false,
           },
-          timeout: 120000, // Increased timeout to 2 minutes
+          timeout: 180000, // 3 minutes timeout
           attestation: "none",
           excludeCredentials: [], // Prevent duplicate credentials
         },
@@ -64,21 +74,23 @@ export class BiometricService {
       
       // Provide more specific error messages based on error type
       if (error.name === 'NotSupportedError') {
-        throw new Error('Your device does not support biometric authentication');
+        throw new Error('Your device does not support biometric authentication. Please try using a device with fingerprint, face recognition, or Windows Hello.');
       } else if (error.name === 'NotAllowedError') {
-        throw new Error('Biometric authentication permission was denied. Please allow biometric access and try again.');
+        throw new Error('Permission denied. Please click "Allow" when prompted for biometric access, or check your browser settings to enable biometric authentication.');
       } else if (error.name === 'InvalidStateError') {
-        throw new Error('A biometric credential already exists for this device. Please try authenticating instead.');
+        throw new Error('A biometric credential already exists for this device. Please try authenticating instead of enrolling again.');
       } else if (error.name === 'ConstraintError') {
-        throw new Error('Your device does not meet the security requirements for biometric authentication');
+        throw new Error('Your device does not meet the security requirements. Please ensure your biometric sensors are set up and working properly.');
       } else if (error.name === 'SecurityError') {
-        throw new Error('Security error: Please ensure you are using HTTPS and try again');
-      } else if (error.name === 'AbortError') {
-        throw new Error('Biometric enrollment was cancelled. Please try again when ready.');
-      } else if (error.message && error.message.includes('cancelled')) {
-        throw new Error('Biometric enrollment was cancelled. Please complete the enrollment process to continue.');
+        throw new Error('Security error: Please ensure you are using HTTPS and your browser supports biometric authentication.');
+      } else if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+        throw new Error('Biometric enrollment timed out. Please try again and complete the process quickly when prompted.');
+      } else if (error.message && (error.message.includes('cancelled') || error.message.includes('denied'))) {
+        throw new Error('Biometric enrollment was cancelled or denied. Please allow biometric access when prompted and try again.');
+      } else if (error.message && error.message.includes('No biometric sensors')) {
+        throw new Error('No biometric sensors detected. Please ensure your device has fingerprint, face recognition, or other biometric capabilities enabled.');
       } else {
-        throw new Error(`Biometric enrollment failed: ${error.message || 'Please ensure your device supports biometric authentication and try again'}`);
+        throw new Error(`Biometric enrollment failed: ${error.message || 'Please check your device settings and ensure biometric authentication is enabled'}`);
       }
     }
   }
