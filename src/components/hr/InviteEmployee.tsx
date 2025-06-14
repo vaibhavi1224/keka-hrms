@@ -42,7 +42,8 @@ const InviteEmployee = ({ onClose, onSuccess }: InviteEmployeeProps) => {
 
   const inviteMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
+      // First, create the invitation record
+      const { data: invitation, error: dbError } = await supabase
         .from('invitations')
         .insert({
           email: formData.email,
@@ -54,9 +55,33 @@ const InviteEmployee = ({ onClose, onSuccess }: InviteEmployeeProps) => {
           date_of_joining: formData.date_of_joining || null,
           invited_by: profile?.id,
           status: 'INVITED'
-        });
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (dbError) throw dbError;
+
+      // Then send the invitation email
+      const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-invitation', {
+        body: {
+          email: formData.email,
+          name: formData.name,
+          role: formData.role,
+          department: formData.department,
+          designation: formData.designation,
+          invitationToken: invitation.token
+        }
+      });
+
+      if (emailError) {
+        console.error('Email sending error:', emailError);
+        // Don't throw here - the invitation was created successfully
+        toast.warning('Invitation created but email could not be sent. Please check your email configuration.');
+      } else {
+        console.log('Email sent successfully:', emailResult);
+      }
+
+      return invitation;
     },
     onSuccess: () => {
       toast.success('Employee invitation sent successfully');
