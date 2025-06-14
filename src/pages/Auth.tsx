@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Users, Eye, EyeOff } from 'lucide-react';
+import { Users, Eye, EyeOff, TestTube } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const Auth = () => {
@@ -28,6 +28,52 @@ const Auth = () => {
       navigate('/');
     }
   }, [user, navigate]);
+
+  const handleTestHRLogin = async () => {
+    setError('');
+    setLoading(true);
+
+    try {
+      // Try to sign up with a test HR account first
+      const testEmail = 'hr.test@company.com';
+      const testPassword = 'test123';
+
+      const { error: signUpError } = await signUp(testEmail, testPassword, {
+        first_name: 'Test',
+        last_name: 'HR'
+      });
+
+      if (signUpError && !signUpError.message.includes('already registered')) {
+        throw signUpError;
+      }
+
+      // Now sign in
+      const { error: signInError } = await signIn(testEmail, testPassword);
+      if (signInError) {
+        throw signInError;
+      }
+
+      // Update the profile to HR role
+      setTimeout(async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase
+            .from('profiles')
+            .update({ 
+              role: 'hr',
+              department: 'Human Resources',
+              designation: 'HR Manager'
+            })
+            .eq('id', user.id);
+        }
+      }, 1000);
+
+    } catch (err: any) {
+      setError(err.message || 'Failed to create test HR account');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,6 +147,27 @@ const Auth = () => {
           </p>
         </CardHeader>
         <CardContent>
+          {/* Test HR Login Button */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full mb-4 border-green-300 text-green-700 hover:bg-green-50"
+            onClick={handleTestHRLogin}
+            disabled={loading}
+          >
+            <TestTube className="w-5 h-5 mr-2" />
+            {loading ? 'Creating Test HR Account...' : 'Quick Test HR Login'}
+          </Button>
+
+          <div className="relative mb-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-gray-500">Or use regular login</span>
+            </div>
+          </div>
+
           {/* Google Sign-In Button */}
           <Button
             type="button"
@@ -231,6 +298,10 @@ const Auth = () => {
                 {isLogin ? 'Sign up' : 'Sign in'}
               </button>
             </p>
+          </div>
+
+          <div className="mt-4 p-3 bg-green-50 rounded-lg text-xs text-green-700">
+            <p><strong>Quick Access:</strong> Click "Quick Test HR Login" to instantly access the HR dashboard without email verification.</p>
           </div>
         </CardContent>
       </Card>
