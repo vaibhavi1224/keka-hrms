@@ -50,49 +50,23 @@ const AddEmployee = ({ onClose, onSuccess }: AddEmployeeProps) => {
 
   const addEmployeeMutation = useMutation({
     mutationFn: async () => {
-      // Create user account via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.password,
-        email_confirm: true,
-        user_metadata: {
-          first_name: formData.name.split(' ')[0],
-          last_name: formData.name.split(' ').slice(1).join(' ') || ''
+      const { data, error } = await supabase.functions.invoke('create-employee', {
+        body: {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          role: formData.role,
+          department: formData.department,
+          designation: formData.designation,
+          salary: formData.salary,
+          date_of_joining: formData.date_of_joining
         }
       });
 
-      if (authError) throw authError;
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
 
-      // Update the profile with employee details
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          first_name: formData.name.split(' ')[0],
-          last_name: formData.name.split(' ').slice(1).join(' ') || '',
-          role: formData.role as 'hr' | 'manager' | 'employee',
-          department: formData.department || null,
-          designation: formData.designation || null,
-          date_of_joining: formData.date_of_joining || null,
-          status: 'ACTIVE',
-          is_active: true
-        })
-        .eq('id', authData.user.id);
-
-      if (profileError) throw profileError;
-
-      // Create employee record if salary is provided
-      if (formData.salary) {
-        const { error: employeeError } = await supabase
-          .from('employees')
-          .insert({
-            profile_id: authData.user.id,
-            salary: parseFloat(formData.salary)
-          });
-
-        if (employeeError) throw employeeError;
-      }
-
-      return { email: formData.email, password: formData.password };
+      return data.credentials;
     },
     onSuccess: (credentials) => {
       setGeneratedCredentials(credentials);
