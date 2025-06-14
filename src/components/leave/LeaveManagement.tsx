@@ -14,7 +14,7 @@ const LeaveManagement = () => {
   const { profile } = useProfile();
   const queryClient = useQueryClient();
 
-  // Only HR and managers can see all requests, employees see only their own
+  // Only HR and managers can manage requests, employees see only their own
   const canManageRequests = profile?.role === 'hr' || profile?.role === 'manager';
 
   const { data: leaveRequests = [], isLoading } = useQuery({
@@ -29,7 +29,7 @@ const LeaveManagement = () => {
         `)
         .order('created_at', { ascending: false });
 
-      // If not HR or manager, only show own requests
+      // Employees only see their own requests
       if (!canManageRequests) {
         query = query.eq('user_id', profile?.id);
       }
@@ -41,6 +41,7 @@ const LeaveManagement = () => {
     enabled: !!profile
   });
 
+  // Only HR and managers can approve/reject requests
   const approveRequestMutation = useMutation({
     mutationFn: async (requestId: string) => {
       const { error } = await supabase
@@ -134,7 +135,7 @@ const LeaveManagement = () => {
           <p className="text-gray-600 mt-1">
             {canManageRequests 
               ? 'Manage employee leave requests and policies.' 
-              : 'View and manage your leave requests.'}
+              : 'View your leave history and apply for new leaves.'}
           </p>
         </div>
         <Button className="bg-blue-600 hover:bg-blue-700">
@@ -145,7 +146,7 @@ const LeaveManagement = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {[
-          { title: 'Total Requests', count: stats.total, color: 'bg-blue-50 text-blue-600' },
+          { title: canManageRequests ? 'Total Requests' : 'My Total Requests', count: stats.total, color: 'bg-blue-50 text-blue-600' },
           { title: 'Pending', count: stats.pending, color: 'bg-yellow-50 text-yellow-600' },
           { title: 'Approved', count: stats.approved, color: 'bg-green-50 text-green-600' },
           { title: 'Rejected', count: stats.rejected, color: 'bg-red-50 text-red-600' },
@@ -168,7 +169,7 @@ const LeaveManagement = () => {
 
       <div className="flex space-x-1 mb-6">
         {[
-          { id: 'requests', label: 'Leave Requests' },
+          { id: 'requests', label: canManageRequests ? 'Leave Requests' : 'My Leave History' },
           { id: 'calendar', label: 'Leave Calendar' },
           { id: 'policies', label: 'Leave Policies' }
         ].map((tab) => (
@@ -190,14 +191,16 @@ const LeaveManagement = () => {
         <Card>
           <CardHeader>
             <CardTitle>
-              {canManageRequests ? 'All Leave Requests' : 'My Leave Requests'}
+              {canManageRequests ? 'All Leave Requests' : 'My Leave History'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {leaveRequests.length === 0 ? (
               <div className="text-center py-8">
                 <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">No leave requests found</p>
+                <p className="text-gray-500">
+                  {canManageRequests ? 'No leave requests found' : 'No leave requests found. Apply for your first leave!'}
+                </p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -207,7 +210,10 @@ const LeaveManagement = () => {
                       <div className="flex items-center space-x-4">
                         <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
                           <span className="text-white font-medium text-sm">
-                            {request.profiles?.first_name?.[0]}{request.profiles?.last_name?.[0]}
+                            {canManageRequests 
+                              ? `${request.profiles?.first_name?.[0]}${request.profiles?.last_name?.[0]}`
+                              : `${profile?.first_name?.[0]}${profile?.last_name?.[0]}`
+                            }
                           </span>
                         </div>
                         <div>
@@ -291,6 +297,48 @@ const LeaveManagement = () => {
                 ))}
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedTab === 'calendar' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Leave Calendar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">Leave calendar view coming soon...</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedTab === 'policies' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Leave Policies</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="border-l-4 border-blue-500 pl-4">
+                <h3 className="font-semibold text-gray-900 mb-2">Annual Leave</h3>
+                <p className="text-gray-600">All employees are entitled to 21 days of annual leave per calendar year.</p>
+              </div>
+              <div className="border-l-4 border-green-500 pl-4">
+                <h3 className="font-semibold text-gray-900 mb-2">Sick Leave</h3>
+                <p className="text-gray-600">Up to 10 days of sick leave per year. Medical certificate required for leaves exceeding 3 consecutive days.</p>
+              </div>
+              <div className="border-l-4 border-purple-500 pl-4">
+                <h3 className="font-semibold text-gray-900 mb-2">Emergency Leave</h3>
+                <p className="text-gray-600">Emergency leave may be granted at management discretion for unforeseen circumstances.</p>
+              </div>
+              <div className="border-l-4 border-orange-500 pl-4">
+                <h3 className="font-semibold text-gray-900 mb-2">Maternity/Paternity Leave</h3>
+                <p className="text-gray-600">Maternity leave: 12 weeks. Paternity leave: 2 weeks. Please contact HR for detailed policy.</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
