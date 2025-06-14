@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import ProfileUpdateDialog from '@/components/profile/ProfileUpdateDialog';
 
 interface EmployeeProfileProps {
   employee: any;
@@ -104,9 +105,16 @@ const EmployeeProfile = ({ employee, onClose, onUpdate }: EmployeeProfileProps) 
             <User className="w-5 h-5" />
             Edit Employee Profile
           </CardTitle>
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <ProfileUpdateDialog targetProfile={employee}>
+              <Button variant="outline" size="sm">
+                Detailed Profile
+              </Button>
+            </ProfileUpdateDialog>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
