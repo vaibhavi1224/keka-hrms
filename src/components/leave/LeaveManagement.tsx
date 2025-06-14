@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Calendar, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,9 +10,11 @@ import LeaveStats from './LeaveStats';
 import LeaveRequestCard from './LeaveRequestCard';
 import LeaveCalendar from './LeaveCalendar';
 import LeavePolicies from './LeavePolicies';
+import ApplyLeaveModal from './ApplyLeaveModal';
 
 const LeaveManagement = () => {
   const [selectedTab, setSelectedTab] = useState('requests');
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const { profile } = useProfile();
   const queryClient = useQueryClient();
 
@@ -124,7 +125,10 @@ const LeaveManagement = () => {
               : 'View your leave history and apply for new leaves.'}
           </p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
+        <Button 
+          className="bg-blue-600 hover:bg-blue-700"
+          onClick={() => setIsApplyModalOpen(true)}
+        >
           <Plus className="w-4 h-4 mr-2" />
           Apply Leave
         </Button>
@@ -190,6 +194,11 @@ const LeaveManagement = () => {
       {selectedTab === 'calendar' && <LeaveCalendar />}
 
       {selectedTab === 'policies' && <LeavePolicies />}
+
+      <ApplyLeaveModal 
+        isOpen={isApplyModalOpen} 
+        onClose={() => setIsApplyModalOpen(false)} 
+      />
     </div>
   );
 };
