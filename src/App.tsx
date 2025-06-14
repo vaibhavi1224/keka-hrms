@@ -12,6 +12,7 @@ import Employees from "./pages/Employees";
 import Attendance from "./pages/Attendance";
 import Leave from "./pages/Leave";
 import Payroll from "./pages/Payroll";
+import HRChat from "./pages/HRChat";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ function App() {
                       <Route path="/attendance" element={<Attendance />} />
                       <Route path="/leave" element={<Leave />} />
                       <Route path="/payroll" element={<Payroll />} />
+                      <Route path="/hr-chat" element={<HRChat />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </ProtectedRoute>

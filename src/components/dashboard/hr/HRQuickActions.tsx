@@ -1,14 +1,17 @@
 
 import React from 'react';
-import { Users, Clock, DollarSign, FileText, CheckCircle, UserPlus } from 'lucide-react';
+import { Users, Clock, DollarSign, FileText, CheckCircle, UserPlus, MessageCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 interface HRQuickActionsProps {
   onInviteEmployee: () => void;
 }
 
 const HRQuickActions = ({ onInviteEmployee }: HRQuickActionsProps) => {
+  const navigate = useNavigate();
+
   const quickActions = [
     { 
       title: 'Add New Employee', 
@@ -16,9 +19,15 @@ const HRQuickActions = ({ onInviteEmployee }: HRQuickActionsProps) => {
       icon: UserPlus,
       onClick: onInviteEmployee
     },
+    { 
+      title: 'HR Assistant', 
+      color: 'bg-purple-600 hover:bg-purple-700', 
+      icon: MessageCircle,
+      onClick: () => navigate('/hr-chat')
+    },
     { title: 'Process Payroll', color: 'bg-green-600 hover:bg-green-700', icon: DollarSign },
-    { title: 'Generate Reports', color: 'bg-purple-600 hover:bg-purple-700', icon: FileText },
-    { title: 'Review Compliance', color: 'bg-orange-600 hover:bg-orange-700', icon: CheckCircle },
+    { title: 'Generate Reports', color: 'bg-orange-600 hover:bg-orange-700', icon: FileText },
+    { title: 'Review Compliance', color: 'bg-red-600 hover:bg-red-700', icon: CheckCircle },
   ];
 
   return (
