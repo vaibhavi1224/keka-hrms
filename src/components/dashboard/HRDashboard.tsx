@@ -1,22 +1,34 @@
 
-import React from 'react';
-import { Users, Clock, DollarSign, FileText, AlertCircle, Calendar, TrendingUp, CheckCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Users, Clock, DollarSign, FileText, AlertCircle, Calendar, TrendingUp, CheckCircle, UserPlus, Mail } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import InviteEmployee from '@/components/hr/InviteEmployee';
+import { useInvitations } from '@/hooks/useInvitations';
 
 const HRDashboard = () => {
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const { invitations, refetch: refetchInvitations } = useInvitations();
+
   const quickActions = [
-    { title: 'Add New Employee', color: 'bg-blue-600 hover:bg-blue-700', icon: Users },
+    { 
+      title: 'Add New Employee', 
+      color: 'bg-blue-600 hover:bg-blue-700', 
+      icon: UserPlus,
+      onClick: () => setShowInviteModal(true)
+    },
     { title: 'Process Payroll', color: 'bg-green-600 hover:bg-green-700', icon: DollarSign },
     { title: 'Generate Reports', color: 'bg-purple-600 hover:bg-purple-700', icon: FileText },
     { title: 'Review Compliance', color: 'bg-orange-600 hover:bg-orange-700', icon: CheckCircle },
   ];
 
+  const pendingInvitations = invitations.filter(inv => inv.status === 'INVITED');
+  
   const pendingTasks = [
     { task: 'Review 8 pending leave requests', priority: 'high', count: 8 },
     { task: 'Approve overtime for 12 employees', priority: 'medium', count: 12 },
+    { task: `Process ${pendingInvitations.length} pending invitations`, priority: 'high', count: pendingInvitations.length },
     { task: 'Update 5 employee records', priority: 'low', count: 5 },
-    { task: 'Process 3 resignation letters', priority: 'high', count: 3 },
   ];
 
   const complianceAlerts = [
@@ -25,12 +37,25 @@ const HRDashboard = () => {
     { type: 'Policy Update', message: 'New labor law requires action', severity: 'urgent' },
   ];
 
+  const handleInviteSuccess = () => {
+    refetchInvitations();
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">HR Management Dashboard</h1>
-        <p className="text-gray-600 mt-1">Comprehensive overview of HR operations and employee management</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">HR Management Dashboard</h1>
+          <p className="text-gray-600 mt-1">Comprehensive overview of HR operations and employee management</p>
+        </div>
+        <Button 
+          onClick={() => setShowInviteModal(true)}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          <UserPlus className="w-4 h-4 mr-2" />
+          Invite Employee
+        </Button>
       </div>
 
       {/* Key Metrics */}
@@ -45,6 +70,21 @@ const HRDashboard = () => {
               </div>
               <div className="bg-blue-50 p-3 rounded-lg">
                 <Users className="w-6 h-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Pending Invitations</p>
+                <p className="text-3xl font-bold text-gray-900">{pendingInvitations.length}</p>
+                <p className="text-sm text-orange-600 mt-1">Awaiting response</p>
+              </div>
+              <div className="bg-orange-50 p-3 rounded-lg">
+                <Mail className="w-6 h-6 text-orange-600" />
               </div>
             </div>
           </CardContent>
@@ -79,21 +119,6 @@ const HRDashboard = () => {
             </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Open Positions</p>
-                <p className="text-3xl font-bold text-gray-900">12</p>
-                <p className="text-sm text-orange-600 mt-1">3 urgent hires</p>
-              </div>
-              <div className="bg-red-50 p-3 rounded-lg">
-                <AlertCircle className="w-6 h-6 text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Quick Actions & Pending Tasks */}
@@ -110,6 +135,7 @@ const HRDashboard = () => {
                   <Button
                     key={index}
                     className={`${action.color} text-white p-4 h-auto flex flex-col items-center space-y-2`}
+                    onClick={action.onClick}
                   >
                     <Icon className="w-6 h-6" />
                     <span className="text-sm font-medium text-center">{action.title}</span>
@@ -205,6 +231,14 @@ const HRDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Invite Employee Modal */}
+      {showInviteModal && (
+        <InviteEmployee
+          onClose={() => setShowInviteModal(false)}
+          onSuccess={handleInviteSuccess}
+        />
+      )}
     </div>
   );
 };

@@ -103,6 +103,68 @@ export type Database = {
           },
         ]
       }
+      invitations: {
+        Row: {
+          created_at: string
+          date_of_joining: string | null
+          department: string | null
+          designation: string | null
+          email: string
+          expires_at: string
+          id: string
+          invited_at: string
+          invited_by: string
+          name: string
+          role: Database["public"]["Enums"]["user_role"]
+          salary: number | null
+          status: string | null
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_of_joining?: string | null
+          department?: string | null
+          designation?: string | null
+          email: string
+          expires_at?: string
+          id?: string
+          invited_at?: string
+          invited_by: string
+          name: string
+          role?: Database["public"]["Enums"]["user_role"]
+          salary?: number | null
+          status?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_of_joining?: string | null
+          department?: string | null
+          designation?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_at?: string
+          invited_by?: string
+          name?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          salary?: number | null
+          status?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leave_requests: {
         Row: {
           approved_at: string | null
@@ -168,6 +230,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          auth_method: string | null
           created_at: string
           date_of_joining: string | null
           department: string | null
@@ -176,14 +239,18 @@ export type Database = {
           employee_id: string | null
           first_name: string | null
           id: string
+          invited_at: string | null
+          invited_by: string | null
           is_active: boolean
           last_name: string | null
           manager_id: string | null
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
+          status: string | null
           updated_at: string
         }
         Insert: {
+          auth_method?: string | null
           created_at?: string
           date_of_joining?: string | null
           department?: string | null
@@ -192,14 +259,18 @@ export type Database = {
           employee_id?: string | null
           first_name?: string | null
           id: string
+          invited_at?: string | null
+          invited_by?: string | null
           is_active?: boolean
           last_name?: string | null
           manager_id?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          status?: string | null
           updated_at?: string
         }
         Update: {
+          auth_method?: string | null
           created_at?: string
           date_of_joining?: string | null
           department?: string | null
@@ -208,14 +279,24 @@ export type Database = {
           employee_id?: string | null
           first_name?: string | null
           id?: string
+          invited_at?: string | null
+          invited_by?: string | null
           is_active?: boolean
           last_name?: string | null
           manager_id?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
+          status?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_manager_id_fkey"
             columns: ["manager_id"]
