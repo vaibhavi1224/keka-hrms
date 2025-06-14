@@ -56,6 +56,53 @@ export type Database = {
           },
         ]
       }
+      employee_bank_details: {
+        Row: {
+          aadhaar_number: string | null
+          account_number: string | null
+          bank_name: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          ifsc_code: string | null
+          pan_number: string | null
+          uan_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          aadhaar_number?: string | null
+          account_number?: string | null
+          bank_name?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          ifsc_code?: string | null
+          pan_number?: string | null
+          uan_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aadhaar_number?: string | null
+          account_number?: string | null
+          bank_name?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          ifsc_code?: string | null
+          pan_number?: string | null
+          uan_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_bank_details_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           address: string | null
@@ -228,6 +275,124 @@ export type Database = {
           },
         ]
       }
+      payrolls: {
+        Row: {
+          basic_salary: number
+          bonus: number
+          created_at: string
+          created_by: string
+          employee_id: string
+          esi: number
+          finalized_at: string | null
+          finalized_by: string | null
+          hra: number
+          id: string
+          lop_days: number
+          lop_deduction: number
+          medical_allowance: number
+          month: number
+          net_pay: number
+          notes: string | null
+          other_allowances: number
+          other_deductions: number
+          pf: number
+          present_days: number
+          special_allowance: number
+          status: string
+          tds: number
+          total_deductions: number
+          total_earnings: number
+          transport_allowance: number
+          updated_at: string
+          working_days: number
+          year: number
+        }
+        Insert: {
+          basic_salary?: number
+          bonus?: number
+          created_at?: string
+          created_by: string
+          employee_id: string
+          esi?: number
+          finalized_at?: string | null
+          finalized_by?: string | null
+          hra?: number
+          id?: string
+          lop_days?: number
+          lop_deduction?: number
+          medical_allowance?: number
+          month: number
+          net_pay?: number
+          notes?: string | null
+          other_allowances?: number
+          other_deductions?: number
+          pf?: number
+          present_days?: number
+          special_allowance?: number
+          status?: string
+          tds?: number
+          total_deductions?: number
+          total_earnings?: number
+          transport_allowance?: number
+          updated_at?: string
+          working_days?: number
+          year: number
+        }
+        Update: {
+          basic_salary?: number
+          bonus?: number
+          created_at?: string
+          created_by?: string
+          employee_id?: string
+          esi?: number
+          finalized_at?: string | null
+          finalized_by?: string | null
+          hra?: number
+          id?: string
+          lop_days?: number
+          lop_deduction?: number
+          medical_allowance?: number
+          month?: number
+          net_pay?: number
+          notes?: string | null
+          other_allowances?: number
+          other_deductions?: number
+          pf?: number
+          present_days?: number
+          special_allowance?: number
+          status?: string
+          tds?: number
+          total_deductions?: number
+          total_earnings?: number
+          transport_allowance?: number
+          updated_at?: string
+          working_days?: number
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payrolls_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payrolls_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payrolls_finalized_by_fkey"
+            columns: ["finalized_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           auth_method: string | null
@@ -300,6 +465,122 @@ export type Database = {
           {
             foreignKeyName: "profiles_manager_id_fkey"
             columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salary_structures: {
+        Row: {
+          basic_salary: number
+          created_at: string
+          created_by: string
+          ctc: number
+          effective_from: string
+          employee_id: string
+          hra: number
+          id: string
+          is_active: boolean
+          medical_allowance: number
+          other_allowances: number
+          special_allowance: number
+          transport_allowance: number
+          updated_at: string
+        }
+        Insert: {
+          basic_salary?: number
+          created_at?: string
+          created_by: string
+          ctc?: number
+          effective_from: string
+          employee_id: string
+          hra?: number
+          id?: string
+          is_active?: boolean
+          medical_allowance?: number
+          other_allowances?: number
+          special_allowance?: number
+          transport_allowance?: number
+          updated_at?: string
+        }
+        Update: {
+          basic_salary?: number
+          created_at?: string
+          created_by?: string
+          ctc?: number
+          effective_from?: string
+          employee_id?: string
+          hra?: number
+          id?: string
+          is_active?: boolean
+          medical_allowance?: number
+          other_allowances?: number
+          special_allowance?: number
+          transport_allowance?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_structures_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_structures_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      salary_templates: {
+        Row: {
+          basic_salary: number
+          created_at: string
+          created_by: string
+          ctc: number
+          hra: number
+          id: string
+          medical_allowance: number
+          other_allowances: number
+          special_allowance: number
+          template_name: string
+          transport_allowance: number
+        }
+        Insert: {
+          basic_salary?: number
+          created_at?: string
+          created_by: string
+          ctc?: number
+          hra?: number
+          id?: string
+          medical_allowance?: number
+          other_allowances?: number
+          special_allowance?: number
+          template_name: string
+          transport_allowance?: number
+        }
+        Update: {
+          basic_salary?: number
+          created_at?: string
+          created_by?: string
+          ctc?: number
+          hra?: number
+          id?: string
+          medical_allowance?: number
+          other_allowances?: number
+          special_allowance?: number
+          template_name?: string
+          transport_allowance?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_templates_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
