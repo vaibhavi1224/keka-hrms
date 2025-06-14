@@ -56,6 +56,89 @@ export type Database = {
           },
         ]
       }
+      departments: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          manager_id: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          manager_id?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          manager_id?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departments_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          created_at: string
+          document_name: string
+          document_type: string
+          employee_id: string
+          file_path: string
+          file_size: number | null
+          id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          document_name: string
+          document_type: string
+          employee_id: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          document_name?: string
+          document_type?: string
+          employee_id?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_bank_details: {
         Row: {
           aadhaar_number: string | null
@@ -275,6 +358,51 @@ export type Database = {
           },
         ]
       }
+      offboarding_logs: {
+        Row: {
+          created_at: string
+          employee_id: string
+          exit_reason: string | null
+          feedback: string | null
+          id: string
+          last_working_date: string | null
+          processed_by: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          exit_reason?: string | null
+          feedback?: string | null
+          id?: string
+          last_working_date?: string | null
+          processed_by: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          exit_reason?: string | null
+          feedback?: string | null
+          id?: string
+          last_working_date?: string | null
+          processed_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offboarding_logs_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offboarding_logs_processed_by_fkey"
+            columns: ["processed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payrolls: {
         Row: {
           basic_salary: number
@@ -408,11 +536,14 @@ export type Database = {
           invited_by: string | null
           is_active: boolean
           last_name: string | null
+          last_working_date: string | null
           manager_id: string | null
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
           status: string | null
           updated_at: string
+          working_hours_end: string | null
+          working_hours_start: string | null
         }
         Insert: {
           auth_method?: string | null
@@ -428,11 +559,14 @@ export type Database = {
           invited_by?: string | null
           is_active?: boolean
           last_name?: string | null
+          last_working_date?: string | null
           manager_id?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           status?: string | null
           updated_at?: string
+          working_hours_end?: string | null
+          working_hours_start?: string | null
         }
         Update: {
           auth_method?: string | null
@@ -448,11 +582,14 @@ export type Database = {
           invited_by?: string | null
           is_active?: boolean
           last_name?: string | null
+          last_working_date?: string | null
           manager_id?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           status?: string | null
           updated_at?: string
+          working_hours_end?: string | null
+          working_hours_start?: string | null
         }
         Relationships: [
           {

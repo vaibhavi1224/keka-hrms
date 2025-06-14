@@ -1,14 +1,15 @@
 
 import React, { useState } from 'react';
+import { UserPlus, X, Mail, User, Briefcase, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { X, Mail, User, Building, Calendar, DollarSign } from 'lucide-react';
+import { useProfile } from '@/hooks/useProfile';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 interface InviteEmployeeProps {
   onClose: () => void;
@@ -19,202 +20,200 @@ const InviteEmployee = ({ onClose, onSuccess }: InviteEmployeeProps) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    role: 'employee' as 'hr' | 'manager' | 'employee',
+    role: 'employee',
     department: '',
     designation: '',
-    dateOfJoining: '',
-    salary: ''
+    salary: '',
+    date_of_joining: ''
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const { toast } = useToast();
+  const { profile } = useProfile();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+  const { data: departments = [] } = useQuery({
+    queryKey: ['departments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('departments')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      return data;
+    }
+  });
 
-    try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
-      const inviteData = {
-        name: formData.name,
-        email: formData.email,
-        role: formData.role,
-        department: formData.department || null,
-        designation: formData.designation || null,
-        date_of_joining: formData.dateOfJoining || null,
-        salary: formData.salary ? parseFloat(formData.salary) : null,
-        invited_by: user.id
-      };
-
-      const { data, error: insertError } = await supabase
+  const inviteMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
         .from('invitations')
-        .insert(inviteData)
-        .select()
-        .single();
+        .insert({
+          email: formData.email,
+          name: formData.name,
+          role: formData.role as 'hr' | 'manager' | 'employee',
+          department: formData.department || null,
+          designation: formData.designation || null,
+          salary: formData.salary ? parseFloat(formData.salary) : null,
+          date_of_joining: formData.date_of_joining || null,
+          invited_by: profile?.id,
+          status: 'INVITED'
+        });
 
-      if (insertError) {
-        throw insertError;
-      }
-
-      // Generate invite link
-      const inviteLink = `${window.location.origin}/auth?invite=${data.token}`;
-      
-      toast({
-        title: "Invitation sent successfully!",
-        description: `${formData.name} has been invited to join the team.`,
-      });
-
-      console.log('Invite link:', inviteLink); // For now, just log it
-      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Employee invitation sent successfully');
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Failed to send invitation');
-    } finally {
-      setLoading(false);
+      setFormData({
+        name: '',
+        email: '',
+        role: 'employee',
+        department: '',
+        designation: '',
+        salary: '',
+        date_of_joining: ''
+      });
+    },
+    onError: (error) => {
+      toast.error('Failed to send invitation');
+      console.error('Error sending invitation:', error);
     }
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name || !formData.email) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    inviteMutation.mutate();
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-md">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center space-x-2">
-            <User className="w-5 h-5" />
-            <span>Invite New Employee</span>
+          <CardTitle className="flex items-center gap-2">
+            <UserPlus className="w-5 h-5" />
+            Invite New Employee
           </CardTitle>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-4 h-4" />
           </Button>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="flex items-center space-x-1">
-                  <User className="w-4 h-4" />
-                  <span>Full Name *</span>
-                </Label>
-                <Input
-                  id="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="John Doe"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email" className="flex items-center space-x-1">
-                  <Mail className="w-4 h-4" />
-                  <span>Email Address *</span>
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  placeholder="john@company.com"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Role *</Label>
-                <Select value={formData.role} onValueChange={(value) => handleInputChange('role', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="employee">Employee</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="hr">HR</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="department" className="flex items-center space-x-1">
-                  <Building className="w-4 h-4" />
-                  <span>Department</span>
-                </Label>
-                <Input
-                  id="department"
-                  type="text"
-                  value={formData.department}
-                  onChange={(e) => handleInputChange('department', e.target.value)}
-                  placeholder="Engineering, Sales, etc."
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="designation">Designation</Label>
-                <Input
-                  id="designation"
-                  type="text"
-                  value={formData.designation}
-                  onChange={(e) => handleInputChange('designation', e.target.value)}
-                  placeholder="Software Engineer, Sales Manager, etc."
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dateOfJoining" className="flex items-center space-x-1">
-                  <Calendar className="w-4 h-4" />
-                  <span>Date of Joining</span>
-                </Label>
-                <Input
-                  id="dateOfJoining"
-                  type="date"
-                  value={formData.dateOfJoining}
-                  onChange={(e) => handleInputChange('dateOfJoining', e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="salary" className="flex items-center space-x-1">
-                <DollarSign className="w-4 h-4" />
-                <span>Annual Salary</span>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="name" className="flex items-center gap-2">
+                <User className="w-4 h-4" />
+                Full Name *
               </Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => handleChange('name', e.target.value)}
+                placeholder="Enter full name"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="email" className="flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                Email Address *
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleChange('email', e.target.value)}
+                placeholder="Enter email address"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="role">Role *</Label>
+              <Select value={formData.role} onValueChange={(value) => handleChange('role', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="employee">Employee</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="hr">HR</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="department" className="flex items-center gap-2">
+                <Briefcase className="w-4 h-4" />
+                Department
+              </Label>
+              <Select value={formData.department} onValueChange={(value) => handleChange('department', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.name}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="designation">Designation</Label>
+              <Input
+                id="designation"
+                value={formData.designation}
+                onChange={(e) => handleChange('designation', e.target.value)}
+                placeholder="e.g., Software Developer, Sales Manager"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="salary">Salary (Optional)</Label>
               <Input
                 id="salary"
                 type="number"
                 value={formData.salary}
-                onChange={(e) => handleInputChange('salary', e.target.value)}
-                placeholder="50000"
-                min="0"
-                step="1000"
+                onChange={(e) => handleChange('salary', e.target.value)}
+                placeholder="Enter annual salary"
               />
             </div>
 
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+            <div>
+              <Label htmlFor="joiningDate" className="flex items-center gap-2">
+                <Calendar className="w-4 h-4" />
+                Date of Joining
+              </Label>
+              <Input
+                id="joiningDate"
+                type="date"
+                value={formData.date_of_joining}
+                onChange={(e) => handleChange('date_of_joining', e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
 
-            <div className="flex justify-end space-x-3 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={onClose}>
+            <div className="flex space-x-3 pt-4">
+              <Button type="button" variant="outline" onClick={onClose} className="flex-1">
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Sending Invitation...' : 'Send Invitation'}
+              <Button 
+                type="submit" 
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                disabled={inviteMutation.isPending}
+              >
+                {inviteMutation.isPending ? 'Sending...' : 'Send Invitation'}
               </Button>
             </div>
           </form>
