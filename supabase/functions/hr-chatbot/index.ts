@@ -90,7 +90,7 @@ Reimbursement Policy:
 Please provide helpful, accurate responses about HR policies, leave management, and company procedures. If you don't have specific information, direct them to contact HR at hr@company.com.
 `;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -124,6 +124,8 @@ Please provide helpful, accurate responses about HR policies, leave management, 
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Gemini API error: ${response.status} - ${errorText}`);
       throw new Error(`Gemini API error: ${response.status}`);
     }
 
