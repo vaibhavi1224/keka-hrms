@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import InviteEmployee from '@/components/hr/InviteEmployee';
-import { useInvitations } from '@/hooks/useInvitations';
+import AddEmployee from '@/components/hr/AddEmployee';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import HRMetrics from './hr/HRMetrics';
 import HRQuickActions from './hr/HRQuickActions';
 import HRPendingTasks from './hr/HRPendingTasks';
@@ -11,13 +12,24 @@ import HRComplianceAlerts from './hr/HRComplianceAlerts';
 import HRDepartmentOverview from './hr/HRDepartmentOverview';
 
 const HRDashboard = () => {
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const { invitations, refetch: refetchInvitations } = useInvitations();
+  const [showAddModal, setShowAddModal] = useState(false);
 
-  const pendingInvitations = invitations.filter(inv => inv.status === 'INVITED');
+  const { data: employees = [], refetch: refetchEmployees } = useQuery({
+    queryKey: ['employees'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
 
-  const handleInviteSuccess = () => {
-    refetchInvitations();
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  const handleAddSuccess = () => {
+    refetchEmployees();
   };
 
   return (
@@ -29,21 +41,21 @@ const HRDashboard = () => {
           <p className="text-gray-600 mt-1">Comprehensive overview of HR operations and employee management</p>
         </div>
         <Button 
-          onClick={() => setShowInviteModal(true)}
+          onClick={() => setShowAddModal(true)}
           className="bg-blue-600 hover:bg-blue-700"
         >
           <UserPlus className="w-4 h-4 mr-2" />
-          Invite Employee
+          Add Employee
         </Button>
       </div>
 
       {/* Key Metrics */}
-      <HRMetrics pendingInvitationsCount={pendingInvitations.length} />
+      <HRMetrics pendingInvitationsCount={0} />
 
       {/* Quick Actions & Pending Tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <HRQuickActions onInviteEmployee={() => setShowInviteModal(true)} />
-        <HRPendingTasks pendingInvitationsCount={pendingInvitations.length} />
+        <HRQuickActions onInviteEmployee={() => setShowAddModal(true)} />
+        <HRPendingTasks pendingInvitationsCount={0} />
       </div>
 
       {/* Compliance Alerts & Department Overview */}
@@ -52,11 +64,11 @@ const HRDashboard = () => {
         <HRDepartmentOverview />
       </div>
 
-      {/* Invite Employee Modal */}
-      {showInviteModal && (
-        <InviteEmployee
-          onClose={() => setShowInviteModal(false)}
-          onSuccess={handleInviteSuccess}
+      {/* Add Employee Modal */}
+      {showAddModal && (
+        <AddEmployee
+          onClose={() => setShowAddModal(false)}
+          onSuccess={handleAddSuccess}
         />
       )}
     </div>

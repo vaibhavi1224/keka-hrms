@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Users, UserPlus, Search, Filter, MoreVertical, Edit, Trash2, FileText, UserMinus } from 'lucide-react';
+import { Users, UserPlus, Search, Filter, MoreVertical, Edit, UserMinus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,14 +9,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
-import InviteEmployee from '@/components/hr/InviteEmployee';
+import AddEmployee from '@/components/hr/AddEmployee';
 import EmployeeProfile from './EmployeeProfile';
 import OffboardEmployee from './OffboardEmployee';
-import { toast } from 'sonner';
 
 const EmployeeList = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showOffboardModal, setShowOffboardModal] = useState(false);
@@ -61,7 +60,7 @@ const EmployeeList = () => {
     employee.department?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleInviteSuccess = () => {
+  const handleAddSuccess = () => {
     refetch();
   };
 
@@ -103,11 +102,11 @@ const EmployeeList = () => {
         </div>
         {profile?.role === 'hr' && (
           <Button 
-            onClick={() => setShowInviteModal(true)}
+            onClick={() => setShowAddModal(true)}
             className="bg-blue-600 hover:bg-blue-700"
           >
             <UserPlus className="w-4 h-4 mr-2" />
-            Invite Employee
+            Add Employee
           </Button>
         )}
       </div>
@@ -256,10 +255,10 @@ const EmployeeList = () => {
       </Card>
 
       {/* Modals */}
-      {showInviteModal && (
-        <InviteEmployee
-          onClose={() => setShowInviteModal(false)}
-          onSuccess={handleInviteSuccess}
+      {showAddModal && (
+        <AddEmployee
+          onClose={() => setShowAddModal(false)}
+          onSuccess={handleAddSuccess}
         />
       )}
       
