@@ -1,13 +1,16 @@
 
 import React, { useState } from 'react';
-import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, Plus } from 'lucide-react';
+import { Calendar, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import LeaveStats from './LeaveStats';
+import LeaveRequestCard from './LeaveRequestCard';
+import LeaveCalendar from './LeaveCalendar';
+import LeavePolicies from './LeavePolicies';
 
 const LeaveManagement = () => {
   const [selectedTab, setSelectedTab] = useState('requests');
@@ -41,7 +44,6 @@ const LeaveManagement = () => {
     enabled: !!profile
   });
 
-  // Only HR and managers can approve/reject requests
   const approveRequestMutation = useMutation({
     mutationFn: async (requestId: string) => {
       const { error } = await supabase
@@ -89,22 +91,6 @@ const LeaveManagement = () => {
     }
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-yellow-100 text-yellow-800';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'approved': return <CheckCircle className="w-4 h-4" />;
-      case 'rejected': return <XCircle className="w-4 h-4" />;
-      default: return <AlertCircle className="w-4 h-4" />;
-    }
-  };
-
   const getStats = () => {
     const total = leaveRequests.length;
     const pending = leaveRequests.filter(req => req.status === 'pending').length;
@@ -144,28 +130,7 @@ const LeaveManagement = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {[
-          { title: canManageRequests ? 'Total Requests' : 'My Total Requests', count: stats.total, color: 'bg-blue-50 text-blue-600' },
-          { title: 'Pending', count: stats.pending, color: 'bg-yellow-50 text-yellow-600' },
-          { title: 'Approved', count: stats.approved, color: 'bg-green-50 text-green-600' },
-          { title: 'Rejected', count: stats.rejected, color: 'bg-red-50 text-red-600' },
-        ].map((stat, index) => (
-          <Card key={index}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.count}</p>
-                </div>
-                <div className={`p-3 rounded-lg ${stat.color}`}>
-                  <Calendar className="w-5 h-5" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <LeaveStats stats={stats} canManageRequests={canManageRequests} />
 
       <div className="flex space-x-1 mb-6">
         {[
@@ -205,95 +170,16 @@ const LeaveManagement = () => {
             ) : (
               <div className="space-y-4">
                 {leaveRequests.map((request) => (
-                  <div key={request.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
-                          <span className="text-white font-medium text-sm">
-                            {canManageRequests 
-                              ? `${request.profiles?.first_name?.[0]}${request.profiles?.last_name?.[0]}`
-                              : `${profile?.first_name?.[0]}${profile?.last_name?.[0]}`
-                            }
-                          </span>
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-gray-900">
-                            {canManageRequests 
-                              ? `${request.profiles?.first_name} ${request.profiles?.last_name}`
-                              : 'My Leave Request'}
-                          </h4>
-                          <p className="text-sm text-gray-500">{request.leave_type}</p>
-                          {canManageRequests && request.profiles?.employee_id && (
-                            <p className="text-xs text-gray-400">ID: {request.profiles.employee_id}</p>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-6">
-                        <div className="text-center">
-                          <p className="text-sm font-medium text-gray-900">{request.start_date}</p>
-                          <p className="text-xs text-gray-500">Start Date</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-sm font-medium text-gray-900">{request.end_date}</p>
-                          <p className="text-xs text-gray-500">End Date</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-sm font-medium text-gray-900">{request.days_requested} days</p>
-                          <p className="text-xs text-gray-500">Duration</p>
-                        </div>
-                        <Badge className={getStatusColor(request.status)}>
-                          <div className="flex items-center space-x-1">
-                            {getStatusIcon(request.status)}
-                            <span className="capitalize">{request.status}</span>
-                          </div>
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      {request.reason && (
-                        <p className="text-sm text-gray-600 mb-2">
-                          <strong>Reason:</strong> {request.reason}
-                        </p>
-                      )}
-                      {request.rejection_reason && (
-                        <p className="text-sm text-red-600 mb-2">
-                          <strong>Rejection Reason:</strong> {request.rejection_reason}
-                        </p>
-                      )}
-                      <div className="flex justify-between items-center">
-                        <p className="text-xs text-gray-500">
-                          Applied on {new Date(request.created_at).toLocaleDateString()}
-                          {request.approved_by_profile && (
-                            <span className="ml-2">
-                              • {request.status === 'approved' ? 'Approved' : 'Rejected'} by {request.approved_by_profile.first_name} {request.approved_by_profile.last_name}
-                            </span>
-                          )}
-                        </p>
-                        {canManageRequests && request.status === 'pending' && (
-                          <div className="space-x-2">
-                            <Button 
-                              size="sm" 
-                              className="bg-green-600 hover:bg-green-700"
-                              onClick={() => approveRequestMutation.mutate(request.id)}
-                              disabled={approveRequestMutation.isPending}
-                            >
-                              Approve
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="destructive"
-                              onClick={() => rejectRequestMutation.mutate({ requestId: request.id })}
-                              disabled={rejectRequestMutation.isPending}
-                            >
-                              Reject
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <LeaveRequestCard
+                    key={request.id}
+                    request={request}
+                    canManageRequests={canManageRequests}
+                    currentUserProfile={profile}
+                    onApprove={(requestId) => approveRequestMutation.mutate(requestId)}
+                    onReject={(requestId) => rejectRequestMutation.mutate({ requestId })}
+                    isApproving={approveRequestMutation.isPending}
+                    isRejecting={rejectRequestMutation.isPending}
+                  />
                 ))}
               </div>
             )}
@@ -301,47 +187,9 @@ const LeaveManagement = () => {
         </Card>
       )}
 
-      {selectedTab === 'calendar' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Leave Calendar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8">
-              <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">Leave calendar view coming soon...</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {selectedTab === 'calendar' && <LeaveCalendar />}
 
-      {selectedTab === 'policies' && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Leave Policies</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="border-l-4 border-blue-500 pl-4">
-                <h3 className="font-semibold text-gray-900 mb-2">Annual Leave</h3>
-                <p className="text-gray-600">All employees are entitled to 21 days of annual leave per calendar year.</p>
-              </div>
-              <div className="border-l-4 border-green-500 pl-4">
-                <h3 className="font-semibold text-gray-900 mb-2">Sick Leave</h3>
-                <p className="text-gray-600">Up to 10 days of sick leave per year. Medical certificate required for leaves exceeding 3 consecutive days.</p>
-              </div>
-              <div className="border-l-4 border-purple-500 pl-4">
-                <h3 className="font-semibold text-gray-900 mb-2">Emergency Leave</h3>
-                <p className="text-gray-600">Emergency leave may be granted at management discretion for unforeseen circumstances.</p>
-              </div>
-              <div className="border-l-4 border-orange-500 pl-4">
-                <h3 className="font-semibold text-gray-900 mb-2">Maternity/Paternity Leave</h3>
-                <p className="text-gray-600">Maternity leave: 12 weeks. Paternity leave: 2 weeks. Please contact HR for detailed policy.</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {selectedTab === 'policies' && <LeavePolicies />}
     </div>
   );
 };
