@@ -12,22 +12,33 @@ import {
   LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
-  userRole: 'HR' | 'Manager' | 'Employee';
+  userRole: 'hr' | 'manager' | 'employee';
 }
 
 const Sidebar = ({ userRole }: SidebarProps) => {
   const location = useLocation();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (!error) {
+      navigate('/auth');
+    }
+  };
 
   const navigationItems = [
-    { name: 'Dashboard', href: '/', icon: Home, roles: ['HR', 'Manager', 'Employee'] },
-    { name: 'Employees', href: '/employees', icon: Users, roles: ['HR', 'Manager'] },
-    { name: 'Attendance', href: '/attendance', icon: Clock, roles: ['HR', 'Manager', 'Employee'] },
-    { name: 'Leave Management', href: '/leave', icon: Calendar, roles: ['HR', 'Manager', 'Employee'] },
-    { name: 'Payroll', href: '/payroll', icon: DollarSign, roles: ['HR'] },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3, roles: ['HR', 'Manager'] },
-    { name: 'Settings', href: '/settings', icon: Settings, roles: ['HR'] },
+    { name: 'Dashboard', href: '/', icon: Home, roles: ['hr', 'manager', 'employee'] },
+    { name: 'Employees', href: '/employees', icon: Users, roles: ['hr', 'manager'] },
+    { name: 'Attendance', href: '/attendance', icon: Clock, roles: ['hr', 'manager', 'employee'] },
+    { name: 'Leave Management', href: '/leave', icon: Calendar, roles: ['hr', 'manager', 'employee'] },
+    { name: 'Payroll', href: '/payroll', icon: DollarSign, roles: ['hr'] },
+    { name: 'Analytics', href: '/analytics', icon: BarChart3, roles: ['hr', 'manager'] },
+    { name: 'Settings', href: '/settings', icon: Settings, roles: ['hr'] },
   ];
 
   const filteredItems = navigationItems.filter(item => 
@@ -35,7 +46,7 @@ const Sidebar = ({ userRole }: SidebarProps) => {
   );
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 shadow-sm h-full">
+    <div className="w-64 bg-white border-r border-gray-200 shadow-sm h-full flex flex-col">
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
@@ -48,7 +59,7 @@ const Sidebar = ({ userRole }: SidebarProps) => {
         </div>
       </div>
       
-      <nav className="p-4">
+      <nav className="p-4 flex-1">
         <ul className="space-y-2">
           {filteredItems.map((item) => {
             const Icon = item.icon;
@@ -74,8 +85,11 @@ const Sidebar = ({ userRole }: SidebarProps) => {
         </ul>
       </nav>
       
-      <div className="absolute bottom-4 left-4 right-4">
-        <button className="flex items-center space-x-3 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg w-full transition-colors duration-150">
+      <div className="p-4 border-t border-gray-200">
+        <button 
+          onClick={handleSignOut}
+          className="flex items-center space-x-3 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg w-full transition-colors duration-150"
+        >
           <LogOut className="w-5 h-5" />
           <span>Sign Out</span>
         </button>

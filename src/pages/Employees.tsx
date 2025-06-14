@@ -5,7 +5,7 @@ import EmployeeList from '@/components/employees/EmployeeList';
 
 const Employees = () => {
   return (
-    <Layout userRole="HR" userName="John Doe">
+    <Layout>
       <EmployeeList />
     </Layout>
   );

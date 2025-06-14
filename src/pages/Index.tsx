@@ -5,7 +5,7 @@ import Dashboard from '@/components/dashboard/Dashboard';
 
 const Index = () => {
   return (
-    <Layout userRole="HR" userName="John Doe">
+    <Layout>
       <Dashboard />
     </Layout>
   );

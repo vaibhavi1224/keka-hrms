@@ -5,7 +5,7 @@ import LeaveManagement from '@/components/leave/LeaveManagement';
 
 const Leave = () => {
   return (
-    <Layout userRole="HR" userName="John Doe">
+    <Layout>
       <LeaveManagement />
     </Layout>
   );

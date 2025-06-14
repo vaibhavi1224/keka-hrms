@@ -1,15 +1,27 @@
 
 import React from 'react';
-import { Bell, Search, User } from 'lucide-react';
+import { Bell, Search, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
-  userRole: 'HR' | 'Manager' | 'Employee';
+  userRole: 'hr' | 'manager' | 'employee';
   userName: string;
 }
 
 const Header = ({ userRole, userName }: HeaderProps) => {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (!error) {
+      navigate('/auth');
+    }
+  };
+
   return (
     <header className="bg-white border-b border-gray-200 shadow-sm">
       <div className="flex items-center justify-between px-6 py-4">
@@ -40,6 +52,9 @@ const Header = ({ userRole, userName }: HeaderProps) => {
               <p className="font-medium text-gray-900">{userName}</p>
               <p className="text-gray-500 capitalize">{userRole}</p>
             </div>
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </div>

@@ -5,7 +5,7 @@ import AttendanceTracker from '@/components/attendance/AttendanceTracker';
 
 const Attendance = () => {
   return (
-    <Layout userRole="HR" userName="John Doe">
+    <Layout>
       <AttendanceTracker />
     </Layout>
   );
