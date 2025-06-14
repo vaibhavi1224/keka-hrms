@@ -1,10 +1,14 @@
-
 import React from 'react';
 import { Clock, Calendar, DollarSign, TrendingUp, CheckCircle, AlertCircle, MapPin, Award } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useProfile } from '@/hooks/useProfile';
 
 const EmployeeDashboard = () => {
+  const { profile } = useProfile();
+  
+  const firstName = profile?.first_name || 'User';
+
   const personalStats = [
     { label: 'Hours This Week', value: '38.5', target: '40', icon: Clock, color: 'blue' },
     { label: 'Leave Balance', value: '12', unit: 'days', icon: Calendar, color: 'green' },
@@ -44,7 +48,7 @@ const EmployeeDashboard = () => {
       {/* Header with Quick Clock In/Out */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Welcome back, John!</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Welcome back, {firstName}!</h1>
           <p className="text-gray-600 mt-1">Here's your personal dashboard and today's overview</p>
         </div>
         <div className="flex space-x-3">
