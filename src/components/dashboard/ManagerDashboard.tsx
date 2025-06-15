@@ -3,8 +3,11 @@ import React from 'react';
 import { Users, Clock, Calendar, TrendingUp, CheckCircle, AlertTriangle, Star, Target } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 const ManagerDashboard = () => {
+  const navigate = useNavigate();
+
   const teamStats = [
     { label: 'Team Members', value: '12', change: '+1', icon: Users, color: 'blue' },
     { label: 'Present Today', value: '11', change: '92%', icon: CheckCircle, color: 'green' },
@@ -32,6 +35,22 @@ const ManagerDashboard = () => {
     { event: 'Project Deadline', time: 'Tomorrow', type: 'deadline' },
     { event: 'Team Building Event', time: 'Friday', type: 'event' },
   ];
+
+  const handleReviewLeaveRequests = () => {
+    navigate('/leave');
+  };
+
+  const handleSchedulePerformanceReviews = () => {
+    navigate('/performance');
+  };
+
+  const handleSetTeamGoals = () => {
+    navigate('/performance');
+  };
+
+  const handleApproveOvertimeRequests = () => {
+    navigate('/attendance');
+  };
 
   return (
     <div className="space-y-6">
@@ -79,19 +98,31 @@ const ManagerDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <Button className="w-full justify-start bg-blue-600 hover:bg-blue-700 text-white">
+              <Button 
+                onClick={handleReviewLeaveRequests}
+                className="w-full justify-start bg-blue-600 hover:bg-blue-700 text-white"
+              >
                 <Calendar className="w-4 h-4 mr-2" />
                 Review Leave Requests (5 pending)
               </Button>
-              <Button className="w-full justify-start bg-green-600 hover:bg-green-700 text-white">
+              <Button 
+                onClick={handleSchedulePerformanceReviews}
+                className="w-full justify-start bg-green-600 hover:bg-green-700 text-white"
+              >
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Schedule Performance Reviews
               </Button>
-              <Button className="w-full justify-start bg-purple-600 hover:bg-purple-700 text-white">
+              <Button 
+                onClick={handleSetTeamGoals}
+                className="w-full justify-start bg-purple-600 hover:bg-purple-700 text-white"
+              >
                 <Target className="w-4 h-4 mr-2" />
                 Set Team Goals
               </Button>
-              <Button className="w-full justify-start bg-orange-600 hover:bg-orange-700 text-white">
+              <Button 
+                onClick={handleApproveOvertimeRequests}
+                className="w-full justify-start bg-orange-600 hover:bg-orange-700 text-white"
+              >
                 <Clock className="w-4 h-4 mr-2" />
                 Approve Overtime Requests
               </Button>
