@@ -16,7 +16,11 @@ interface Message {
   timestamp: Date;
 }
 
-const HRChatbot = () => {
+interface HRChatbotProps {
+  isWidget?: boolean;
+}
+
+const HRChatbot = ({ isWidget = false }: HRChatbotProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([
@@ -71,11 +75,14 @@ const HRChatbot = () => {
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
-      toast({
-        title: "Error",
-        description: "Failed to get response from HR assistant. Please try again.",
-        variant: "destructive",
-      });
+      
+      if (!isWidget) {
+        toast({
+          title: "Error",
+          description: "Failed to get response from HR assistant. Please try again.",
+          variant: "destructive",
+        });
+      }
 
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -97,6 +104,89 @@ const HRChatbot = () => {
     }
   };
 
+  // Widget version (embedded in floating widget)
+  if (isWidget) {
+    return (
+      <div className="h-full flex flex-col">
+        <ScrollArea className="flex-1 px-4 py-2" ref={scrollAreaRef}>
+          <div className="space-y-3">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex items-start gap-2 ${
+                  message.isUser ? 'justify-end' : 'justify-start'
+                }`}
+              >
+                {!message.isUser && (
+                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <Bot className="w-3 h-3 text-blue-600" />
+                  </div>
+                )}
+                <div
+                  className={`max-w-[75%] rounded-lg p-2 text-sm ${
+                    message.isUser
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-900'
+                  }`}
+                >
+                  <p className="whitespace-pre-wrap">{message.text}</p>
+                  <p className={`text-xs mt-1 ${
+                    message.isUser ? 'text-blue-100' : 'text-gray-500'
+                  }`}>
+                    {message.timestamp.toLocaleTimeString([], { 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    })}
+                  </p>
+                </div>
+                {message.isUser && (
+                  <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                    <User className="w-3 h-3 text-white" />
+                  </div>
+                )}
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex items-start gap-2">
+                <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <Bot className="w-3 h-3 text-blue-600" />
+                </div>
+                <div className="bg-gray-100 rounded-lg p-2">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-3 h-3 animate-spin text-gray-600" />
+                    <p className="text-sm text-gray-600">Thinking...</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+        
+        <div className="p-3 border-t border-gray-200">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Ask me anything..."
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              disabled={isLoading}
+              className="flex-1 text-sm"
+            />
+            <Button 
+              onClick={sendMessage} 
+              disabled={isLoading || !inputMessage.trim()}
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Send className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Full page version (existing functionality)
   return (
     <Card className="h-[600px] flex flex-col">
       <CardHeader>

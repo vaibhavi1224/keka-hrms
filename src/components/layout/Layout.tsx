@@ -2,6 +2,7 @@
 import React from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import FloatingHRChatWidget from '@/components/common/FloatingHRChatWidget';
 import { useProfile } from '@/hooks/useProfile';
 
 interface LayoutProps {
@@ -34,6 +35,9 @@ const Layout = ({ children }: LayoutProps) => {
           {children}
         </main>
       </div>
+      
+      {/* Floating HR Chat Widget - Available on all pages */}
+      <FloatingHRChatWidget />
     </div>
   );
 };
