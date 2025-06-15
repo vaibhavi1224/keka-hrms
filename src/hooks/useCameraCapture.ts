@@ -77,20 +77,23 @@ export const useCameraCapture = () => {
         videoRef.current.srcObject = mediaStream;
         setStream(mediaStream);
         
+        // Set isCapturing immediately when stream is obtained
+        console.log('Setting isCapturing to true immediately');
+        setIsCapturing(true);
+        setDebugInfo('Camera ready');
+        
+        // Also set up the metadata event handler as backup
         videoRef.current.onloadedmetadata = () => {
-          console.log('Video metadata loaded, setting isCapturing to true');
+          console.log('Video metadata loaded - confirming isCapturing state');
           setIsCapturing(true);
-          setDebugInfo('Camera ready');
+          setDebugInfo('Camera ready (metadata loaded)');
         };
-
-        // Fallback: set isCapturing after a short delay if metadata doesn't load
-        setTimeout(() => {
-          if (mediaStream.active) {
-            console.log('Fallback: Setting isCapturing to true after timeout');
-            setIsCapturing(true);
-            setDebugInfo('Camera ready (fallback)');
-          }
-        }, 1000);
+      } else {
+        // If videoRef is not available, still set the stream and state
+        console.log('Video ref not available, but setting stream and isCapturing');
+        setStream(mediaStream);
+        setIsCapturing(true);
+        setDebugInfo('Camera ready (no video ref)');
       }
     } catch (error: any) {
       console.error('Error accessing camera:', error);
@@ -122,7 +125,7 @@ export const useCameraCapture = () => {
     } finally {
       setIsStarting(false);
     }
-  }, [toast, isCapturing]);
+  }, [toast]);
 
   const stopCamera = useCallback(() => {
     console.log('Stopping camera...');
