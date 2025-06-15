@@ -28,6 +28,9 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const HIGH_RISK_THRESHOLD = 0.7;
 const MEDIUM_RISK_THRESHOLD = 0.4;
 
+// Add delay between requests to avoid rate limiting
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -56,13 +59,20 @@ serve(async (req) => {
     const employeeData = await fetchEmployeeData(employee_ids);
     console.log('📊 Employee data fetched:', employeeData.length, 'records');
     
-    // Process predictions for each employee
+    // Process predictions for each employee with rate limiting
     const predictions = [];
     const failedPredictions = [];
     
-    for (const employee of employeeData) {
+    for (let i = 0; i < employeeData.length; i++) {
+      const employee = employeeData[i];
+      
       try {
-        console.log(`🧠 Processing AI prediction for employee: ${employee.employee_name}`);
+        console.log(`🧠 Processing AI prediction for employee: ${employee.employee_name} (${i + 1}/${employeeData.length})`);
+        
+        // Add delay between requests to avoid rate limiting
+        if (i > 0) {
+          await delay(1000); // 1 second delay between requests
+        }
         
         const prediction = await callGeminiAttritionPredictor(employee);
         console.log(`✅ AI prediction for ${employee.employee_name}: ${prediction.attrition_probability}`);
@@ -83,6 +93,13 @@ serve(async (req) => {
         
       } catch (error) {
         console.error(`❌ AI prediction failed for employee ${employee.employee_id}:`, error.message);
+        
+        // If it's a rate limit error, add a longer delay and retry once
+        if (error.message.includes('Too Many Requests') && i < employeeData.length - 1) {
+          console.log('⏳ Rate limit detected, adding longer delay...');
+          await delay(5000); // 5 second delay for rate limit recovery
+        }
+        
         failedPredictions.push({
           employee_id: employee.employee_id,
           employee_name: employee.employee_name,
@@ -103,7 +120,12 @@ serve(async (req) => {
         successful: predictions.length,
         failed: failedPredictions.length,
         ai_predictions: predictions.length,
-        success_rate: Math.round((predictions.length / employee_ids.length) * 100)
+        success_rate: Math.round((predictions.length / employee_ids.length) * 100),
+        risk_distribution: {
+          high: predictions.filter(p => p.risk_level === 'HIGH').length,
+          medium: predictions.filter(p => p.risk_level === 'MEDIUM').length,
+          low: predictions.filter(p => p.risk_level === 'LOW').length
+        }
       }
     };
 
@@ -111,7 +133,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         ...response,
         error: 'No successful predictions generated',
-        message: 'All AI predictions failed. Please check your Gemini API configuration.'
+        message: 'All AI predictions failed. Please check your Gemini API configuration or try again later due to rate limits.'
       }), {
         headers: {...corsHeaders, 'Content-Type': 'application/json' },
         status: 422
@@ -223,7 +245,7 @@ async function callGeminiAttritionPredictor(employee: EmployeeAttritionData) {
   console.log(`🤖 Calling Gemini AI for attrition prediction: ${employee.employee_name}`);
   
   try {
-    // Create structured prompt for Gemini AI
+    // Create structured prompt for Gemini AI with balanced risk assessment
     const employeeAnalysisPrompt = createEmployeeAnalysisPrompt(employee);
     
     console.log('📤 Sending analysis request to Gemini AI');
@@ -242,7 +264,7 @@ async function callGeminiAttritionPredictor(employee: EmployeeAttritionData) {
             }]
           }],
           generationConfig: {
-            temperature: 0.3,
+            temperature: 0.4, // Slightly higher for more variation
             topK: 40,
             topP: 0.95,
             maxOutputTokens: 1024,
@@ -252,7 +274,8 @@ async function callGeminiAttritionPredictor(employee: EmployeeAttritionData) {
     );
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
@@ -290,7 +313,7 @@ function createEmployeeAnalysisPrompt(employee: EmployeeAttritionData): string {
    ? employee.performance_metrics.reduce((sum, m) => sum + m.metric_value, 0) / employee.performance_metrics.length
     : 75;
 
-  return `You are an expert HR analytics AI specializing in employee attrition prediction. Analyze the following employee data and predict their likelihood of leaving the company.
+  return `You are an expert HR analytics AI specializing in employee attrition prediction. Analyze the following employee data and predict their likelihood of leaving the company. Be realistic and consider that many employees with good metrics should have LOW risk.
 
 EMPLOYEE PROFILE:
 - Name: ${employee.employee_name}
@@ -309,15 +332,25 @@ ATTENDANCE & ENGAGEMENT:
 - Average working hours: ${avgWorkingHours.toFixed(1)} hours/day
 - Recent attendance records: ${employee.attendance_data.length}
 
+ANALYSIS GUIDELINES:
+- LOW RISK (0.0-0.4): Good performers with stable metrics, long tenure, good attendance
+- MEDIUM RISK (0.4-0.7): Mixed indicators, some concerns but not critical
+- HIGH RISK (0.7-1.0): Poor performance, low engagement, concerning patterns
+
 Based on this data, provide your analysis in the following EXACT format:
 
 ATTRITION_PROBABILITY: [number between 0.0 and 1.0]
 RISK_FACTORS: [list of 3-5 specific factors that influence the prediction]
 CONFIDENCE: [your confidence in this prediction as a percentage]
 
-Example:
-ATTRITION_PROBABILITY: 0.65
-RISK_FACTORS: Low performance ratings, High absenteeism, Below market salary, Limited career progression, Poor work-life balance
+Example for a good performer:
+ATTRITION_PROBABILITY: 0.25
+RISK_FACTORS: Stable performance metrics, Good attendance record, Long tenure indicates loyalty, Above average engagement
+CONFIDENCE: 88%
+
+Example for a concerning case:
+ATTRITION_PROBABILITY: 0.75
+RISK_FACTORS: Below average performance ratings, Poor attendance pattern, Limited career progression, Work-life balance concerns
 CONFIDENCE: 85%
 
 Analyze the employee data and provide your prediction:`;
