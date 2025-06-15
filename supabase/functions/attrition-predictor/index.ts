@@ -1,7 +1,5 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
-import { InferenceClient } from "https://esm.sh/@huggingface/inference";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,8 +48,8 @@ serve(async (req) => {
         let prediction;
         
         if (huggingFaceToken) {
-          // Use the specific attrition model
-          prediction = await callAttritionModel(employee);
+          // Use the specific attrition classification model
+          prediction = await callAttritionClassificationModel(employee);
           console.log(`✅ AI prediction for ${employee.employee_name}: ${prediction.attrition_probability}`);
         } else {
           // Fallback to rule-based prediction
@@ -207,45 +205,55 @@ async function fetchEmployeeData(employee_ids: string[]) {
   return enrichedData;
 }
 
-async function callAttritionModel(employee: EmployeeAttritionData) {
-  console.log(`🤖 Calling Mistral Attrition Model for: ${employee.employee_name}`);
-  
-  const client = new InferenceClient(huggingFaceToken);
-  
-  // Create structured input for the attrition model
-  const employeeInput = createEmployeeInputForModel(employee);
+async function callAttritionClassificationModel(employee: EmployeeAttritionData) {
+  console.log(`🤖 Calling Mistral Attrition Classification Model for: ${employee.employee_name}`);
   
   try {
-    console.log('📤 Sending to robloxguard200/employee_attrition_rate_model_mistral with input:', employeeInput);
+    // Create structured input text for the classification model
+    const employeeInputText = createEmployeeInputTextForClassification(employee);
     
-    const result = await client.textGeneration({
-      model: "robloxguard200/employee_attrition_rate_model_mistral",
-      inputs: employeeInput,
-      parameters: {
-        max_new_tokens: 250,
-        temperature: 0.1,
-        return_full_text: false
+    console.log('📤 Sending to robloxguard200/employee_attrition_rate_model_mistral with input:', employeeInputText);
+    
+    const response = await fetch(
+      "https://api-inference.huggingface.co/models/robloxguard200/employee_attrition_rate_model_mistral",
+      {
+        headers: {
+          Authorization: `Bearer ${huggingFaceToken}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+        body: JSON.stringify({
+          inputs: employeeInputText,
+          options: {
+            wait_for_model: true
+          }
+        }),
       }
-    });
+    );
 
-    console.log('🔍 Raw Mistral attrition model result:', JSON.stringify(result, null, 2));
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('🔍 Raw Mistral classification result:', JSON.stringify(result, null, 2));
     
-    // Parse the model output to extract attrition probability
-    const attrition_probability = parseAttritionModelOutput(result.generated_text, employee);
+    // Parse the classification result to extract attrition probability
+    const attrition_probability = parseClassificationResult(result, employee);
     
     return {
       attrition_probability,
       confidence: 0.90,
-      key_factors: extractAIKeyFactors(employee, attrition_probability, result.generated_text)
+      key_factors: extractAIKeyFactors(employee, attrition_probability, result)
     };
     
   } catch (error) {
-    console.error('💥 Mistral attrition model call failed:', error.message);
+    console.error('💥 Mistral attrition classification model call failed:', error.message);
     throw error;
   }
 }
 
-function createEmployeeInputForModel(employee: EmployeeAttritionData): string {
+function createEmployeeInputTextForClassification(employee: EmployeeAttritionData): string {
   const avgRating = employee.feedback.length > 0 
     ? employee.feedback.reduce((sum, f) => sum + (f.rating || 3), 0) / employee.feedback.length 
     : 3;
@@ -262,72 +270,48 @@ function createEmployeeInputForModel(employee: EmployeeAttritionData): string {
     ? employee.performance_metrics.reduce((sum, m) => sum + m.metric_value, 0) / employee.performance_metrics.length
     : 75;
 
-  // Create input in a format the attrition model expects
-  const input = `Employee Profile Analysis:
-Department: ${employee.department}
-Designation: ${employee.designation}
-Years in Company: ${employee.years_in_company}
-Performance Rating: ${avgRating.toFixed(1)}/5
-Performance Metrics: ${avgPerformance.toFixed(1)}%
-Attendance Rate: ${attendanceRate.toFixed(1)}%
-Average Working Hours: ${avgWorkingHours.toFixed(1)}
-Salary CTC: ${employee.salary?.ctc || 'N/A'}
+  // Create structured text input that the model can classify
+  const inputText = `Employee in ${employee.department} department working as ${employee.designation} for ${employee.years_in_company} years. Performance rating: ${avgRating.toFixed(1)}/5, Performance metrics: ${avgPerformance.toFixed(1)}%, Attendance rate: ${attendanceRate.toFixed(1)}%, Average working hours: ${avgWorkingHours.toFixed(1)}. Salary CTC: ${employee.salary?.ctc || 'Not specified'}.`;
 
-Based on this employee profile, predict the attrition risk probability (0-1) and provide key risk factors:`;
-
-  return input;
+  return inputText;
 }
 
-function parseAttritionModelOutput(modelOutput: string, employee: EmployeeAttritionData): number {
+function parseClassificationResult(result: any, employee: EmployeeAttritionData): number {
   try {
-    console.log('🔍 Parsing model output:', modelOutput);
-    
-    // Look for probability patterns in the output
-    const probabilityRegex = /(?:probability|risk|chance).*?(\d+(?:\.\d+)?)/i;
-    const percentageRegex = /(\d+(?:\.\d+)?)%/;
-    const decimalRegex = /0\.\d+/;
+    console.log('🔍 Parsing classification result:', result);
     
     let probability = 0.3; // Default fallback
     
-    if (probabilityRegex.test(modelOutput)) {
-      const match = modelOutput.match(probabilityRegex);
-      if (match) {
-        probability = parseFloat(match[1]);
-        // If it's a percentage, convert to decimal
-        if (probability > 1) {
-          probability = probability / 100;
+    if (Array.isArray(result) && result.length > 0) {
+      // Handle classification output format
+      const classificationResults = result[0];
+      
+      if (Array.isArray(classificationResults)) {
+        // Find attrition-related labels
+        const attritionResult = classificationResults.find(item => 
+          item.label && (
+            item.label.toLowerCase().includes('leave') ||
+            item.label.toLowerCase().includes('attrition') ||
+            item.label.toLowerCase().includes('quit') ||
+            item.label.toLowerCase().includes('1') // Often class 1 represents "will leave"
+          )
+        );
+        
+        if (attritionResult) {
+          probability = attritionResult.score || 0.3;
+        } else {
+          // If no specific attrition label found, use the highest scoring negative outcome
+          const highestScore = Math.max(...classificationResults.map(item => item.score || 0));
+          const highestResult = classificationResults.find(item => item.score === highestScore);
+          
+          // Assume higher scores indicate higher risk
+          probability = highestScore;
         }
+      } else if (classificationResults.score !== undefined) {
+        probability = classificationResults.score;
       }
-    } else if (percentageRegex.test(modelOutput)) {
-      const match = modelOutput.match(percentageRegex);
-      if (match) {
-        probability = parseFloat(match[1]) / 100;
-      }
-    } else if (decimalRegex.test(modelOutput)) {
-      const match = modelOutput.match(decimalRegex);
-      if (match) {
-        probability = parseFloat(match[0]);
-      }
-    } else {
-      // Fallback: analyze keywords to estimate probability
-      const lowRiskKeywords = ['low', 'stable', 'satisfied', 'good', 'excellent'];
-      const highRiskKeywords = ['high', 'likely', 'risk', 'dissatisfied', 'poor', 'concerning'];
-      
-      const lowCount = lowRiskKeywords.filter(keyword => 
-        modelOutput.toLowerCase().includes(keyword)
-      ).length;
-      
-      const highCount = highRiskKeywords.filter(keyword => 
-        modelOutput.toLowerCase().includes(keyword)
-      ).length;
-      
-      if (highCount > lowCount) {
-        probability = 0.7;
-      } else if (lowCount > highCount) {
-        probability = 0.2;
-      } else {
-        probability = 0.4;
-      }
+    } else if (result.score !== undefined) {
+      probability = result.score;
     }
     
     // Ensure probability is within valid range
@@ -337,23 +321,22 @@ function parseAttritionModelOutput(modelOutput: string, employee: EmployeeAttrit
     return probability;
     
   } catch (error) {
-    console.error('❌ Error parsing model output:', error);
+    console.error('❌ Error parsing classification result:', error);
     // Fallback to rule-based calculation
     return generateRuleBasedPrediction(employee).attrition_probability;
   }
 }
 
-function extractAIKeyFactors(employee: EmployeeAttritionData, probability: number, modelOutput?: string): string[] {
-  const factors = ['AI-powered attrition analysis using Mistral model'];
+function extractAIKeyFactors(employee: EmployeeAttritionData, probability: number, modelResult?: any): string[] {
+  const factors = ['AI-powered attrition analysis using Mistral classification model'];
   
-  if (modelOutput) {
-    // Extract insights from model output
-    const sentences = modelOutput.split('.').filter(s => s.trim().length > 10);
-    sentences.slice(0, 3).forEach(sentence => {
-      if (sentence.toLowerCase().includes('risk') || 
-          sentence.toLowerCase().includes('factor') ||
-          sentence.toLowerCase().includes('concern')) {
-        factors.push(sentence.trim());
+  if (modelResult && Array.isArray(modelResult) && modelResult[0]) {
+    const results = Array.isArray(modelResult[0]) ? modelResult[0] : [modelResult[0]];
+    
+    // Extract top prediction labels as insights
+    results.slice(0, 2).forEach(result => {
+      if (result.label && result.score) {
+        factors.push(`Model prediction: ${result.label} (confidence: ${(result.score * 100).toFixed(1)}%)`);
       }
     });
   }
@@ -490,7 +473,7 @@ async function storePrediction(employeeId: string, attritionRisk: number, keyFac
         attrition_risk: attritionRisk,
         predicted_at: new Date().toISOString(),
         risk_level: getRiskLevel(attritionRisk),
-        model_version: 'mistral-attrition-ai-v1',
+        model_version: 'mistral-attrition-classification-v1',
         risk_factors: keyFactors || []
       });
 
