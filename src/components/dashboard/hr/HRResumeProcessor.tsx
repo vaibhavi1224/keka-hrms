@@ -20,7 +20,7 @@ const HRResumeProcessor = () => {
         .from('documents')
         .select(`
           *,
-          profiles:employee_id (
+          profiles!documents_employee_id_fkey (
             first_name,
             last_name,
             email
