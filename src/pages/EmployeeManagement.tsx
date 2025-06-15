@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/layout/Layout';
 import { useProfile } from '@/hooks/useProfile';
@@ -9,6 +8,7 @@ import AddEmployee from '@/components/hr/AddEmployee';
 import DepartmentManager from '@/components/employees/DepartmentManager';
 import DocumentManager from '@/components/hr/DocumentManager';
 import WorkflowManager from '@/components/employees/WorkflowManager';
+import ResumeDataViewer from '@/components/hr/ResumeDataViewer';
 
 const EmployeeManagement = () => {
   const { profile, loading } = useProfile();
@@ -66,7 +66,7 @@ const EmployeeManagement = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className={`grid w-full ${isHR ? 'grid-cols-5' : 'grid-cols-2'}`}>
+          <TabsList className={`grid w-full ${isHR ? 'grid-cols-6' : 'grid-cols-2'}`}>
             <TabsTrigger value="employees" className="flex items-center space-x-2">
               <Users className="w-4 h-4" />
               <span>Employees</span>
@@ -88,6 +88,10 @@ const EmployeeManagement = () => {
                 <TabsTrigger value="workflows" className="flex items-center space-x-2">
                   <Settings className="w-4 h-4" />
                   <span>Workflows</span>
+                </TabsTrigger>
+                <TabsTrigger value="resume-data" className="flex items-center space-x-2">
+                  <FileText className="w-4 h-4" />
+                  <span>Resume Data</span>
                 </TabsTrigger>
               </>
             )}
@@ -116,6 +120,10 @@ const EmployeeManagement = () => {
 
               <TabsContent value="workflows">
                 <WorkflowManager />
+              </TabsContent>
+
+              <TabsContent value="resume-data">
+                <ResumeDataViewer />
               </TabsContent>
             </>
           )}
