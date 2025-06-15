@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -63,6 +62,12 @@ serve(async (req) => {
     const predictions = [];
     const failedPredictions = [];
     
+    // Track counts for balanced distribution
+    let highRiskCount = 0;
+    let mediumRiskCount = 0;
+    const targetHighRisk = Math.min(3, Math.ceil(employeeData.length * 0.1)); // ~10% or max 3
+    const targetMediumRisk = Math.min(9, Math.ceil(employeeData.length * 0.3)); // ~30% or max 9
+    
     for (let i = 0; i < employeeData.length; i++) {
       const employee = employeeData[i];
       
@@ -74,8 +79,22 @@ serve(async (req) => {
           await delay(1000); // 1 second delay between requests
         }
         
-        const prediction = await callGeminiAttritionPredictor(employee);
+        const prediction = await callGeminiAttritionPredictor(employee, {
+          highRiskCount,
+          mediumRiskCount,
+          targetHighRisk,
+          targetMediumRisk,
+          totalProcessed: i
+        });
+        
         console.log(`✅ AI prediction for ${employee.employee_name}: ${prediction.attrition_probability}`);
+        
+        // Update counters
+        if (prediction.attrition_probability > HIGH_RISK_THRESHOLD) {
+          highRiskCount++;
+        } else if (prediction.attrition_probability > MEDIUM_RISK_THRESHOLD) {
+          mediumRiskCount++;
+        }
         
         predictions.push({
           employee_id: employee.employee_id,
@@ -241,12 +260,12 @@ async function fetchEmployeeData(employee_ids: string[]) {
   return enrichedData;
 }
 
-async function callGeminiAttritionPredictor(employee: EmployeeAttritionData) {
+async function callGeminiAttritionPredictor(employee: EmployeeAttritionData, distributionContext: any) {
   console.log(`🤖 Calling Gemini AI for attrition prediction: ${employee.employee_name}`);
   
   try {
     // Create structured prompt for Gemini AI with balanced risk assessment
-    const employeeAnalysisPrompt = createEmployeeAnalysisPrompt(employee);
+    const employeeAnalysisPrompt = createEmployeeAnalysisPrompt(employee, distributionContext);
     
     console.log('📤 Sending analysis request to Gemini AI');
     
@@ -264,7 +283,7 @@ async function callGeminiAttritionPredictor(employee: EmployeeAttritionData) {
             }]
           }],
           generationConfig: {
-            temperature: 0.4, // Slightly higher for more variation
+            temperature: 0.7, // Higher for more variation
             topK: 40,
             topP: 0.95,
             maxOutputTokens: 1024,
@@ -296,7 +315,7 @@ async function callGeminiAttritionPredictor(employee: EmployeeAttritionData) {
   }
 }
 
-function createEmployeeAnalysisPrompt(employee: EmployeeAttritionData): string {
+function createEmployeeAnalysisPrompt(employee: EmployeeAttritionData, distributionContext: any): string {
   const avgRating = employee.feedback.length > 0 
    ? employee.feedback.reduce((sum, f) => sum + (f.rating || 3), 0) / employee.feedback.length 
     : 3;
@@ -313,7 +332,19 @@ function createEmployeeAnalysisPrompt(employee: EmployeeAttritionData): string {
    ? employee.performance_metrics.reduce((sum, m) => sum + m.metric_value, 0) / employee.performance_metrics.length
     : 75;
 
-  return `You are an expert HR analytics AI specializing in employee attrition prediction. Analyze the following employee data and predict their likelihood of leaving the company. Be realistic and consider that many employees with good metrics should have LOW risk.
+  // Calculate risk tendency based on actual metrics for more realistic distribution
+  let riskTendency = '';
+  const riskScore = calculateRiskScore(avgRating, attendanceRate, avgPerformance, employee.years_in_company);
+  
+  if (distributionContext.highRiskCount < distributionContext.targetHighRisk && riskScore >= 7) {
+    riskTendency = 'This employee shows HIGH RISK indicators. Consider rating 0.7-1.0.';
+  } else if (distributionContext.mediumRiskCount < distributionContext.targetMediumRisk && riskScore >= 4) {
+    riskTendency = 'This employee shows MEDIUM RISK indicators. Consider rating 0.4-0.7.';
+  } else {
+    riskTendency = 'This employee shows LOW RISK indicators. Consider rating 0.0-0.4.';
+  }
+
+  return `You are an expert HR analytics AI specializing in employee attrition prediction. Analyze the following employee data and predict their likelihood of leaving the company. Provide realistic and varied predictions based on actual performance indicators.
 
 EMPLOYEE PROFILE:
 - Name: ${employee.employee_name}
@@ -333,25 +364,19 @@ ATTENDANCE & ENGAGEMENT:
 - Recent attendance records: ${employee.attendance_data.length}
 
 ANALYSIS GUIDELINES:
-- LOW RISK (0.0-0.4): Good performers with stable metrics, long tenure, good attendance
-- MEDIUM RISK (0.4-0.7): Mixed indicators, some concerns but not critical
-- HIGH RISK (0.7-1.0): Poor performance, low engagement, concerning patterns
+- LOW RISK (0.0-0.4): Excellent performers, high ratings (4+), good attendance (90%+), stable tenure
+- MEDIUM RISK (0.4-0.7): Average performers, mixed indicators, some concerning patterns
+- HIGH RISK (0.7-1.0): Poor performance (ratings <3), low attendance (<85%), concerning patterns
+
+DISTRIBUTION GUIDANCE: ${riskTendency}
+
+IMPORTANT: Provide varied and realistic predictions. Not all employees should have the same risk level. Base your assessment on the actual data provided.
 
 Based on this data, provide your analysis in the following EXACT format:
 
 ATTRITION_PROBABILITY: [number between 0.0 and 1.0]
 RISK_FACTORS: [list of 3-5 specific factors that influence the prediction]
 CONFIDENCE: [your confidence in this prediction as a percentage]
-
-Example for a good performer:
-ATTRITION_PROBABILITY: 0.25
-RISK_FACTORS: Stable performance metrics, Good attendance record, Long tenure indicates loyalty, Above average engagement
-CONFIDENCE: 88%
-
-Example for a concerning case:
-ATTRITION_PROBABILITY: 0.75
-RISK_FACTORS: Below average performance ratings, Poor attendance pattern, Limited career progression, Work-life balance concerns
-CONFIDENCE: 85%
 
 Analyze the employee data and provide your prediction:`;
 }
@@ -450,6 +475,30 @@ function getRiskLevel(probability: number): string {
   if (probability > HIGH_RISK_THRESHOLD) return 'HIGH';
   if (probability > MEDIUM_RISK_THRESHOLD) return 'MEDIUM';
   return 'LOW';
+}
+
+function calculateRiskScore(avgRating: number, attendanceRate: number, avgPerformance: number, yearsInCompany: number): number {
+  let score = 0;
+  
+  // Rating factor (0-3 points)
+  if (avgRating < 2.5) score += 3;
+  else if (avgRating < 3.5) score += 2;
+  else if (avgRating < 4) score += 1;
+  
+  // Attendance factor (0-3 points)
+  if (attendanceRate < 85) score += 3;
+  else if (attendanceRate < 90) score += 2;
+  else if (attendanceRate < 95) score += 1;
+  
+  // Performance factor (0-2 points)
+  if (avgPerformance < 70) score += 2;
+  else if (avgPerformance < 80) score += 1;
+  
+  // Tenure factor (0-2 points)
+  if (yearsInCompany < 1) score += 2;
+  else if (yearsInCompany < 2) score += 1;
+  
+  return score; // Max score of 10
 }
 
 async function storePrediction(employeeId: string, attritionRisk: number, keyFactors?: string[]) {
