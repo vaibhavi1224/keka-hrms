@@ -103,28 +103,28 @@ const MonthlyReportGenerator = ({ onBack }: MonthlyReportGeneratorProps) => {
   const totalEmployees = reportData?.length || 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-hidden">
       <div className="flex items-center space-x-4">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
-        <h2 className="text-2xl font-bold">Monthly Payroll Report</h2>
+        <h2 className="text-2xl font-bold truncate">Monthly Payroll Report</h2>
       </div>
 
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <FileText className="w-5 h-5" />
-            <span>Generate Monthly Report</span>
+            <FileText className="w-5 h-5 flex-shrink-0" />
+            <span className="truncate">Generate Monthly Report</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
+            <div className="min-w-0">
               <label className="block text-sm font-medium mb-2">Month</label>
               <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(Number(value))}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -137,10 +137,10 @@ const MonthlyReportGenerator = ({ onBack }: MonthlyReportGeneratorProps) => {
               </Select>
             </div>
 
-            <div>
+            <div className="min-w-0">
               <label className="block text-sm font-medium mb-2">Year</label>
               <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(Number(value))}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -153,7 +153,7 @@ const MonthlyReportGenerator = ({ onBack }: MonthlyReportGeneratorProps) => {
               </Select>
             </div>
 
-            <div className="flex items-end">
+            <div className="flex items-end min-w-0">
               <Button onClick={generateReport} className="w-full" disabled={isLoading}>
                 {isLoading ? 'Generating...' : 'Generate Report'}
               </Button>
@@ -163,42 +163,42 @@ const MonthlyReportGenerator = ({ onBack }: MonthlyReportGeneratorProps) => {
           {reportData && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
+                <Card className="min-w-0">
                   <CardContent className="p-4">
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">{totalEmployees}</p>
-                      <p className="text-sm text-gray-600">Total Employees</p>
+                      <p className="text-2xl font-bold text-blue-600 truncate">{totalEmployees}</p>
+                      <p className="text-sm text-gray-600 truncate">Total Employees</p>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="min-w-0">
                   <CardContent className="p-4">
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-green-600">
+                      <p className="text-2xl font-bold text-green-600 truncate">
                         ₹{new Intl.NumberFormat('en-IN').format(totalPayroll)}
                       </p>
-                      <p className="text-sm text-gray-600">Total Payroll</p>
+                      <p className="text-sm text-gray-600 truncate">Total Payroll</p>
                     </div>
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card className="min-w-0">
                   <CardContent className="p-4">
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-purple-600">
+                      <p className="text-2xl font-bold text-purple-600 truncate">
                         ₹{totalEmployees > 0 ? new Intl.NumberFormat('en-IN').format(Math.round(totalPayroll / totalEmployees)) : 0}
                       </p>
-                      <p className="text-sm text-gray-600">Average Salary</p>
+                      <p className="text-sm text-gray-600 truncate">Average Salary</p>
                     </div>
                   </CardContent>
                 </Card>
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={downloadReport}>
-                  <Download className="w-4 h-4 mr-2" />
-                  Download Report
+                <Button onClick={downloadReport} className="min-w-0">
+                  <Download className="w-4 h-4 mr-2 flex-shrink-0" />
+                  <span className="truncate">Download Report</span>
                 </Button>
               </div>
             </div>

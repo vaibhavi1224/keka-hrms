@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -101,19 +102,19 @@ const PayrollAnalytics = ({ onBack }: PayrollAnalyticsProps) => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+    <div className="space-y-6 max-w-full overflow-hidden">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center space-x-4 min-w-0">
           <Button variant="outline" onClick={onBack}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
-          <h2 className="text-2xl font-bold">Payroll Analytics</h2>
+          <h2 className="text-2xl font-bold truncate">Payroll Analytics</h2>
         </div>
         
-        <div className="w-48">
+        <div className="w-48 min-w-0">
           <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(Number(value))}>
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -128,126 +129,132 @@ const PayrollAnalytics = ({ onBack }: PayrollAnalyticsProps) => {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="min-w-0">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Employees</p>
-                <p className="text-2xl font-bold">{totalEmployees}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-600 truncate">Total Employees</p>
+                <p className="text-2xl font-bold truncate">{totalEmployees}</p>
               </div>
-              <Users className="h-8 w-8 text-blue-600" />
+              <Users className="h-8 w-8 text-blue-600 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Payroll</p>
-                <p className="text-2xl font-bold">₹{new Intl.NumberFormat('en-IN').format(Math.round(totalPayroll))}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-600 truncate">Total Payroll</p>
+                <p className="text-2xl font-bold truncate">₹{new Intl.NumberFormat('en-IN').format(Math.round(totalPayroll))}</p>
               </div>
-              <DollarSign className="h-8 w-8 text-green-600" />
+              <DollarSign className="h-8 w-8 text-green-600 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Average Salary</p>
-                <p className="text-2xl font-bold">₹{new Intl.NumberFormat('en-IN').format(Math.round(averageSalary))}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-600 truncate">Average Salary</p>
+                <p className="text-2xl font-bold truncate">₹{new Intl.NumberFormat('en-IN').format(Math.round(averageSalary))}</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-purple-600" />
+              <TrendingUp className="h-8 w-8 text-purple-600 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Departments</p>
-                <p className="text-2xl font-bold">{departmentData.length}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-600 truncate">Departments</p>
+                <p className="text-2xl font-bold truncate">{departmentData.length}</p>
               </div>
-              <PieChart className="h-8 w-8 text-orange-600" />
+              <PieChart className="h-8 w-8 text-orange-600 flex-shrink-0" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Monthly Trend Chart */}
-      <Card>
+      <Card className="w-full">
         <CardHeader>
-          <CardTitle>Monthly Payroll Trends - {selectedYear}</CardTitle>
+          <CardTitle className="truncate">Monthly Payroll Trends - {selectedYear}</CardTitle>
         </CardHeader>
         <CardContent>
-          <ChartContainer config={chartConfig} className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyData}>
-                <XAxis dataKey="month" />
-                <YAxis />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line 
-                  type="monotone" 
-                  dataKey="totalPayroll" 
-                  stroke="#8884d8" 
-                  strokeWidth={2}
-                  name="Total Payroll (₹)"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </ChartContainer>
+          <div className="w-full overflow-x-auto">
+            <ChartContainer config={chartConfig} className="h-80 min-w-[600px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={monthlyData}>
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line 
+                    type="monotone" 
+                    dataKey="totalPayroll" 
+                    stroke="#8884d8" 
+                    strokeWidth={2}
+                    name="Total Payroll (₹)"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </div>
         </CardContent>
       </Card>
 
       {/* Department Wise Analysis */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
-            <CardTitle>Department Wise Employee Count</CardTitle>
+            <CardTitle className="truncate">Department Wise Employee Count</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={departmentData}>
-                  <XAxis dataKey="department" />
-                  <YAxis />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="count" fill="#82ca9d" name="Employee Count" />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            <div className="w-full overflow-x-auto">
+              <ChartContainer config={chartConfig} className="h-64 min-w-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={departmentData}>
+                    <XAxis dataKey="department" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="count" fill="#82ca9d" name="Employee Count" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
-            <CardTitle>Department Wise Payroll Distribution</CardTitle>
+            <CardTitle className="truncate">Department Wise Payroll Distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsPieChart>
-                  <Pie
-                    data={departmentData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    dataKey="totalPayroll"
-                    nameKey="department"
-                    label={({ department, percent }) => `${department} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {departmentData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                </RechartsPieChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            <div className="w-full overflow-x-auto">
+              <ChartContainer config={chartConfig} className="h-64 min-w-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsPieChart>
+                    <Pie
+                      data={departmentData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      dataKey="totalPayroll"
+                      nameKey="department"
+                      label={({ department, percent }) => `${department} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {departmentData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                  </RechartsPieChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
       </div>

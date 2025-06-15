@@ -140,28 +140,28 @@ const PayrollExporter = ({ onBack }: PayrollExporterProps) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-full overflow-hidden">
       <div className="flex items-center space-x-4">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
-        <h2 className="text-2xl font-bold">Export Payroll Data</h2>
+        <h2 className="text-2xl font-bold truncate">Export Payroll Data</h2>
       </div>
 
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Download className="w-5 h-5" />
-            <span>Payroll Data Export</span>
+            <Download className="w-5 h-5 flex-shrink-0" />
+            <span className="truncate">Payroll Data Export</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
+            <div className="min-w-0">
               <label className="block text-sm font-medium mb-2">Month</label>
               <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(Number(value))}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -174,10 +174,10 @@ const PayrollExporter = ({ onBack }: PayrollExporterProps) => {
               </Select>
             </div>
 
-            <div>
+            <div className="min-w-0">
               <label className="block text-sm font-medium mb-2">Year</label>
               <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(Number(value))}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -190,10 +190,10 @@ const PayrollExporter = ({ onBack }: PayrollExporterProps) => {
               </Select>
             </div>
 
-            <div>
+            <div className="min-w-0">
               <label className="block text-sm font-medium mb-2">Format</label>
               <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as 'csv' | 'excel')}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -207,36 +207,36 @@ const PayrollExporter = ({ onBack }: PayrollExporterProps) => {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Export Options</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center space-x-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="flex items-center space-x-2 min-w-0">
                 <Checkbox 
                   id="allowances" 
                   checked={includeAllowances} 
                   onCheckedChange={(checked) => setIncludeAllowances(checked === true)} 
                 />
-                <label htmlFor="allowances" className="text-sm font-medium">
+                <label htmlFor="allowances" className="text-sm font-medium truncate">
                   Include Allowances
                 </label>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 min-w-0">
                 <Checkbox 
                   id="deductions" 
                   checked={includeDeductions} 
                   onCheckedChange={(checked) => setIncludeDeductions(checked === true)} 
                 />
-                <label htmlFor="deductions" className="text-sm font-medium">
+                <label htmlFor="deductions" className="text-sm font-medium truncate">
                   Include Deductions
                 </label>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 min-w-0">
                 <Checkbox 
                   id="taxes" 
                   checked={includeTaxes} 
                   onCheckedChange={(checked) => setIncludeTaxes(checked === true)} 
                 />
-                <label htmlFor="taxes" className="text-sm font-medium">
+                <label htmlFor="taxes" className="text-sm font-medium truncate">
                   Include Tax Details
                 </label>
               </div>
@@ -246,10 +246,10 @@ const PayrollExporter = ({ onBack }: PayrollExporterProps) => {
           {payrollData && (
             <div className="bg-gray-50 p-4 rounded-lg">
               <h4 className="font-semibold mb-2">Preview</h4>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 break-words">
                 Found {payrollData.length} payroll records for {new Date(2024, selectedMonth - 1).toLocaleString('default', { month: 'long' })} {selectedYear}
               </p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 break-words">
                 Total Payroll: ₹{new Intl.NumberFormat('en-IN').format(
                   payrollData.reduce((sum, row) => sum + Number(row.net_pay), 0)
                 )}
@@ -258,9 +258,9 @@ const PayrollExporter = ({ onBack }: PayrollExporterProps) => {
           )}
 
           <div className="flex justify-end">
-            <Button onClick={exportData} disabled={isLoading}>
-              <Download className="w-4 h-4 mr-2" />
-              {isLoading ? 'Loading...' : `Export as ${exportFormat.toUpperCase()}`}
+            <Button onClick={exportData} disabled={isLoading} className="min-w-0">
+              <Download className="w-4 h-4 mr-2 flex-shrink-0" />
+              <span className="truncate">{isLoading ? 'Loading...' : `Export as ${exportFormat.toUpperCase()}`}</span>
             </Button>
           </div>
         </CardContent>
