@@ -63,11 +63,43 @@ export async function createEmployee(employee: EmployeeData): Promise<boolean> {
       return false;
     } else {
       console.log(`Successfully created employee ${employee.email}`);
+      
+      // If banking details are provided, add them
+      if (employee.bankDetails && data.user_id) {
+        await createBankDetails(data.user_id, employee.bankDetails);
+      }
+      
       return true;
     }
   } catch (error) {
     console.error(`Error processing ${employee.email}:`, error);
     return false;
+  }
+}
+
+async function createBankDetails(userId: string, bankDetails: EmployeeData['bankDetails']): Promise<void> {
+  if (!bankDetails) return;
+
+  try {
+    const { error } = await supabase
+      .from('employee_bank_details')
+      .insert({
+        employee_id: userId,
+        bank_name: bankDetails.bank_name,
+        account_number: bankDetails.account_number,
+        ifsc_code: bankDetails.ifsc_code,
+        pan_number: bankDetails.pan_number,
+        uan_number: bankDetails.uan_number,
+        aadhaar_number: bankDetails.aadhaar_number
+      });
+
+    if (error) {
+      console.error(`Error creating bank details for ${userId}:`, error);
+    } else {
+      console.log(`Successfully created bank details for ${userId}`);
+    }
+  } catch (error) {
+    console.error(`Error processing bank details for ${userId}:`, error);
   }
 }
 
