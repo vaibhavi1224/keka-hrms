@@ -37,8 +37,8 @@ const WorkflowManager = () => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="flex items-center gap-2">
-          <ClipboardList className="w-4 h-4" />
+        <Button className="w-full justify-start">
+          <ClipboardList className="w-4 h-4 mr-2" />
           Manage Workflows
         </Button>
       </DialogTrigger>
