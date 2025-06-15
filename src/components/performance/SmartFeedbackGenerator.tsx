@@ -63,10 +63,10 @@ const SmartFeedbackGenerator = () => {
       if (error) throw error;
 
       setGeneratedAnalysis(data.feedback);
-      toast.success('HR analysis generated successfully!');
+      toast.success('Smart feedback generated successfully!');
     } catch (error) {
       console.error('Error generating analysis:', error);
-      toast.error('Failed to generate analysis. Please try again.');
+      toast.error('Failed to generate feedback. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -90,7 +90,7 @@ const SmartFeedbackGenerator = () => {
 
       if (error) throw error;
 
-      toast.success('HR analysis saved successfully!');
+      toast.success('Smart feedback saved successfully!');
       
       // Reset form
       setSelectedEmployee('');
@@ -99,7 +99,7 @@ const SmartFeedbackGenerator = () => {
       setGeneratedAnalysis(null);
     } catch (error) {
       console.error('Error saving analysis:', error);
-      toast.error('Failed to save analysis');
+      toast.error('Failed to save feedback');
     } finally {
       setIsSaving(false);
     }
@@ -108,7 +108,7 @@ const SmartFeedbackGenerator = () => {
   const copyToClipboard = () => {
     if (generatedAnalysis) {
       navigator.clipboard.writeText(generatedAnalysis.content);
-      toast.success('Analysis copied to clipboard!');
+      toast.success('Feedback copied to clipboard!');
     }
   };
 
@@ -120,10 +120,10 @@ const SmartFeedbackGenerator = () => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Brain className="w-5 h-5 text-purple-600" />
-            <span>AI-Powered HR Decision Analytics</span>
+            <span>Smart Feedback Generator</span>
           </CardTitle>
           <p className="text-sm text-gray-600">
-            Generate comprehensive employee insights and recommendations to help HR make informed decisions about promotions, salary adjustments, training, and retention strategies
+            Generate AI-powered performance feedback and HR decision insights to help make informed decisions about employee promotions, salary adjustments, training, and retention strategies
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -150,7 +150,7 @@ const SmartFeedbackGenerator = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="analysis-type">Analysis Focus</Label>
+              <Label htmlFor="analysis-type">Feedback Focus</Label>
               <Select value={analysisType} onValueChange={setAnalysisType}>
                 <SelectTrigger>
                   <SelectValue />
@@ -223,7 +223,7 @@ const SmartFeedbackGenerator = () => {
             ) : (
               <>
                 <TrendingUp className="w-4 h-4 mr-2" />
-                Generate HR Decision Analysis
+                Generate Smart Feedback & HR Insights
               </>
             )}
           </Button>
@@ -237,7 +237,7 @@ const SmartFeedbackGenerator = () => {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center space-x-2">
                 <Calendar className="w-5 h-5" />
-                <span>HR Decision Analysis</span>
+                <span>AI-Generated HR Insights</span>
               </CardTitle>
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="capitalize">
@@ -251,7 +251,7 @@ const SmartFeedbackGenerator = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>HR Analysis & Recommendations</Label>
+              <Label>Smart Feedback & HR Decision Insights</Label>
               <Textarea
                 value={generatedAnalysis.content}
                 onChange={(e) => setGeneratedAnalysis({
@@ -260,14 +260,14 @@ const SmartFeedbackGenerator = () => {
                 })}
                 rows={16}
                 className="resize-none font-mono text-sm"
-                placeholder="HR analysis and recommendations will appear here..."
+                placeholder="AI-generated feedback and insights will appear here..."
               />
             </div>
 
             <div className="flex items-center space-x-3">
               <Button onClick={copyToClipboard} variant="outline" size="sm">
                 <Copy className="w-4 h-4 mr-2" />
-                Copy Analysis
+                Copy Feedback
               </Button>
               
               <Button 
@@ -295,7 +295,7 @@ const SmartFeedbackGenerator = () => {
 
             <div className="p-3 bg-yellow-50 rounded-lg">
               <p className="text-xs text-yellow-800">
-                <strong>Note:</strong> This AI-generated analysis is designed to assist HR decision-making. 
+                <strong>Note:</strong> This AI-generated feedback is designed to assist HR decision-making. 
                 Please consider additional factors and conduct proper reviews before making final employment decisions.
               </p>
             </div>
