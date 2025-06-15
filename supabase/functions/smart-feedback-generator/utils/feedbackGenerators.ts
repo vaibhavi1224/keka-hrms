@@ -5,7 +5,7 @@ import { calculateSuggestedRating } from './metricsCalculator.ts';
 const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
 export async function generateGeminiFeedback(employeeData: any, feedbackType: string) {
-  const prompt = createFeedbackPrompt(employeeData, feedbackType);
+  const prompt = createHRDecisionPrompt(employeeData, feedbackType);
   
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`, {
     method: 'POST',
@@ -15,9 +15,9 @@ export async function generateGeminiFeedback(employeeData: any, feedbackType: st
     body: JSON.stringify({
       contents: [{
         parts: [{
-          text: `You are an expert HR professional specializing in performance reviews. Generate constructive, specific, and actionable feedback based on employee performance data. Be professional, balanced, and focus on both strengths and areas for improvement.
+          text: `You are an expert HR analytics consultant providing insights to HR professionals for strategic decision-making about employees. Your role is to analyze employee data and provide actionable recommendations for HR decisions including promotions, salary adjustments, training needs, retention strategies, and performance interventions.
 
-IMPORTANT: Provide ONLY plain text feedback without any markdown formatting. Do not use asterisks (*), hashtags (#), or any other markdown symbols. Write in clear, professional prose.
+IMPORTANT: Provide ONLY plain text insights without any markdown formatting. Do not use asterisks (*), hashtags (#), or any other markdown symbols. Write in clear, professional prose.
 
 ${prompt}`
         }]
@@ -26,7 +26,7 @@ ${prompt}`
         temperature: 0.7,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 800,
+        maxOutputTokens: 1000,
       }
     }),
   });
@@ -58,57 +58,72 @@ export async function generateRuleBasedFeedback(employeeData: any, feedbackType:
   const metrics = employeeData.calculatedMetrics;
   const employee = employeeData;
   
-  let feedback = `Performance Review for ${employee.first_name} ${employee.last_name}\n\n`;
+  let feedback = `HR Decision Analysis for ${employee.first_name} ${employee.last_name}\n\n`;
   
-  // Attendance Analysis
-  if (metrics.attendanceRate >= 95) {
-    feedback += `• Excellent attendance record (${metrics.attendanceRate.toFixed(1)}%) demonstrates strong commitment and reliability.\n`;
-  } else if (metrics.attendanceRate >= 85) {
-    feedback += `• Good attendance record (${metrics.attendanceRate.toFixed(1)}%) with room for slight improvement.\n`;
-  } else {
-    feedback += `• Attendance needs attention (${metrics.attendanceRate.toFixed(1)}%). Consider discussing any challenges.\n`;
-  }
-
-  // Performance Metrics Analysis
-  if (metrics.avgPerformanceScore >= 4.0) {
-    feedback += `• Outstanding performance with an average score of ${metrics.avgPerformanceScore.toFixed(1)}/5. Consistently exceeds expectations.\n`;
+  // Performance Assessment
+  feedback += `PERFORMANCE OVERVIEW:\n`;
+  if (metrics.avgPerformanceScore >= 4.5) {
+    feedback += `• Exceptional performer (${metrics.avgPerformanceScore.toFixed(1)}/5) - Strong candidate for promotion and leadership roles.\n`;
+  } else if (metrics.avgPerformanceScore >= 4.0) {
+    feedback += `• High performer (${metrics.avgPerformanceScore.toFixed(1)}/5) - Consider for advancement opportunities and increased responsibilities.\n`;
   } else if (metrics.avgPerformanceScore >= 3.5) {
-    feedback += `• Strong performance with an average score of ${metrics.avgPerformanceScore.toFixed(1)}/5. Meets expectations effectively.\n`;
+    feedback += `• Solid performer (${metrics.avgPerformanceScore.toFixed(1)}/5) - Reliable contributor, consider skill development programs.\n`;
   } else if (metrics.avgPerformanceScore >= 3.0) {
-    feedback += `• Satisfactory performance (${metrics.avgPerformanceScore.toFixed(1)}/5) with opportunities for growth.\n`;
+    feedback += `• Average performer (${metrics.avgPerformanceScore.toFixed(1)}/5) - Requires performance improvement plan and closer monitoring.\n`;
   } else {
-    feedback += `• Performance requires improvement (${metrics.avgPerformanceScore.toFixed(1)}/5). Suggest focused development plan.\n`;
+    feedback += `• Underperformer (${metrics.avgPerformanceScore.toFixed(1)}/5) - Immediate intervention required, consider PIP or role reassignment.\n`;
   }
 
-  // Work Consistency
-  if (metrics.workConsistency >= 80) {
-    feedback += `• Demonstrates excellent work consistency and reliability in daily performance.\n`;
-  } else if (metrics.workConsistency >= 60) {
-    feedback += `• Shows good work consistency with occasional variations.\n`;
+  // Attendance Analysis for HR
+  feedback += `\nATTENDANCE & RELIABILITY:\n`;
+  if (metrics.attendanceRate >= 95) {
+    feedback += `• Excellent attendance (${metrics.attendanceRate.toFixed(1)}%) - Highly reliable, low retention risk.\n`;
+  } else if (metrics.attendanceRate >= 85) {
+    feedback += `• Good attendance (${metrics.attendanceRate.toFixed(1)}%) - Generally reliable, monitor for patterns.\n`;
   } else {
-    feedback += `• Work consistency could be improved. Consider establishing better routines.\n`;
+    feedback += `• Poor attendance (${metrics.attendanceRate.toFixed(1)}%) - High retention risk, investigate underlying issues.\n`;
   }
 
-  // Department and Role Context
-  feedback += `\nRole-Specific Observations:\n`;
-  feedback += `• As a ${employee.designation || 'team member'} in ${employee.department || 'the department'}, `;
+  // HR Decision Recommendations
+  feedback += `\nHR RECOMMENDATIONS:\n`;
   
-  if (metrics.avgPerformanceScore >= 4.0) {
-    feedback += `demonstrates exceptional contribution to team goals and objectives.\n`;
-  } else {
-    feedback += `shows potential for increased contribution to team success.\n`;
+  // Promotion Eligibility
+  if (metrics.avgPerformanceScore >= 4.0 && metrics.attendanceRate >= 90) {
+    feedback += `• PROMOTION: Strong candidate for next level position\n`;
+  } else if (metrics.avgPerformanceScore >= 3.5) {
+    feedback += `• DEVELOPMENT: Focus on skill enhancement before promotion consideration\n`;
   }
 
-  // Recommendations
-  feedback += `\nRecommendations for Next Period:\n`;
-  if (metrics.attendanceRate < 90) {
-    feedback += `• Focus on improving attendance consistency\n`;
+  // Salary Review
+  if (metrics.avgPerformanceScore >= 4.0) {
+    feedback += `• SALARY INCREASE: Recommend merit-based increment (8-15%)\n`;
+  } else if (metrics.avgPerformanceScore >= 3.5) {
+    feedback += `• SALARY REVIEW: Consider standard increment (3-8%)\n`;
   }
-  if (metrics.avgPerformanceScore < 4.0) {
-    feedback += `• Identify specific skill development opportunities\n`;
+
+  // Retention Strategy
+  if (metrics.avgPerformanceScore >= 4.0 && metrics.attendanceRate >= 95) {
+    feedback += `• RETENTION: High-value employee, implement retention strategies\n`;
+  } else if (metrics.avgPerformanceScore < 3.0 || metrics.attendanceRate < 80) {
+    feedback += `• PERFORMANCE PLAN: Implement improvement plan with clear milestones\n`;
   }
-  feedback += `• Continue building on existing strengths\n`;
-  feedback += `• Set clear, measurable goals for the upcoming review period\n`;
+
+  // Training Needs
+  if (metrics.avgPerformanceScore < 3.5) {
+    feedback += `• TRAINING: Identify specific skill gaps and provide targeted training\n`;
+  }
+
+  feedback += `\nRISK ASSESSMENT:\n`;
+  const riskLevel = calculateRiskLevel(metrics);
+  feedback += `• Retention Risk: ${riskLevel}\n`;
+  
+  if (riskLevel === 'High') {
+    feedback += `• Immediate action required to prevent attrition\n`;
+  } else if (riskLevel === 'Medium') {
+    feedback += `• Monitor closely and address concerns proactively\n`;
+  } else {
+    feedback += `• Low risk, continue regular engagement practices\n`;
+  }
 
   const suggestedRating = calculateSuggestedRating(employeeData);
 
@@ -120,36 +135,55 @@ export async function generateRuleBasedFeedback(employeeData: any, feedbackType:
   };
 }
 
-function createFeedbackPrompt(employeeData: any, feedbackType: string): string {
+function calculateRiskLevel(metrics: any): string {
+  if (metrics.avgPerformanceScore < 3.0 || metrics.attendanceRate < 80) {
+    return 'High';
+  } else if (metrics.avgPerformanceScore < 3.5 || metrics.attendanceRate < 90) {
+    return 'Medium';
+  } else {
+    return 'Low';
+  }
+}
+
+function createHRDecisionPrompt(employeeData: any, feedbackType: string): string {
   const employee = employeeData;
   const metrics = employeeData.calculatedMetrics;
   
   return `
-Generate a professional performance review feedback for:
-Employee: ${employee.first_name} ${employee.last_name}
-Position: ${employee.designation || 'N/A'} in ${employee.department || 'N/A'}
+EMPLOYEE PROFILE FOR HR DECISION-MAKING:
+Name: ${employee.first_name} ${employee.last_name}
+Position: ${employee.designation || 'N/A'}
 Department: ${employee.department || 'N/A'}
+Review Period: ${metrics.totalWorkingDays} working days analyzed
 
-Performance Data:
+PERFORMANCE METRICS:
+- Overall Performance Score: ${metrics.avgPerformanceScore.toFixed(1)}/5.0
 - Attendance Rate: ${metrics.attendanceRate.toFixed(1)}%
-- Average Performance Score: ${metrics.avgPerformanceScore.toFixed(1)}/5.0
 - Work Consistency: ${metrics.workConsistency.toFixed(1)}%
-- Total Working Days in Period: ${metrics.totalWorkingDays}
-- Performance Metrics Recorded: ${metrics.metricsCount}
+- Total Performance Reviews: ${metrics.metricsCount}
 
-Recent Performance Metrics:
-${employeeData.metrics.slice(0, 5).map((m: any) => `- ${m.metric_type}: ${m.metric_value} (${m.measurement_date})`).join('\n')}
+RECENT PERFORMANCE TRENDS:
+${employeeData.metrics.slice(0, 5).map((m: any) => `- ${m.metric_type}: ${m.metric_value}/100 (${m.measurement_date})`).join('\n')}
 
-Previous Feedback Themes:
+HISTORICAL FEEDBACK PATTERNS:
 ${employeeData.feedback.slice(0, 3).map((f: any) => `- ${f.feedback_type}: ${f.feedback_text.substring(0, 100)}...`).join('\n')}
 
-Please provide:
-1. A balanced assessment of strengths and achievements
-2. Specific areas for improvement with actionable suggestions
-3. Recognition of consistent behaviors and contributions
-4. Future development recommendations
-5. Keep the tone professional, constructive, and motivating
+Please provide comprehensive HR insights covering:
+1. PERFORMANCE ASSESSMENT: Current standing and trajectory
+2. PROMOTION READINESS: Evaluation for advancement opportunities
+3. SALARY REVIEW RECOMMENDATION: Merit-based adjustment suggestions
+4. RETENTION STRATEGY: Risk assessment and engagement recommendations
+5. DEVELOPMENT NEEDS: Skill gaps and training requirements
+6. STRATEGIC DECISIONS: Long-term career path and organizational fit
 
-Focus on ${feedbackType} feedback style. Limit to 400-500 words.
+Focus on actionable insights that help HR make informed decisions about:
+- Career progression and role assignments
+- Compensation adjustments and bonuses
+- Training and development investments
+- Retention and engagement strategies
+- Performance improvement interventions
+- Team restructuring considerations
+
+Provide specific, data-driven recommendations with rationale. Consider organizational impact and resource allocation in your suggestions.
   `;
 }

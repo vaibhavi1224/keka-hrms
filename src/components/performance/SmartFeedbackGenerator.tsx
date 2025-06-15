@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Sparkles, Copy, Save, User, Calendar } from 'lucide-react';
+import { Loader2, Brain, Copy, Save, User, Calendar, TrendingUp } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -23,14 +23,14 @@ const SmartFeedbackGenerator = () => {
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [reviewPeriodStart, setReviewPeriodStart] = useState('');
   const [reviewPeriodEnd, setReviewPeriodEnd] = useState('');
-  const [feedbackType, setFeedbackType] = useState('comprehensive');
-  const [generatedFeedback, setGeneratedFeedback] = useState<GeneratedFeedback | null>(null);
+  const [analysisType, setAnalysisType] = useState('comprehensive');
+  const [generatedAnalysis, setGeneratedAnalysis] = useState<GeneratedFeedback | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Get all employees
   const { data: employees = [] } = useQuery({
-    queryKey: ['employees-for-feedback'],
+    queryKey: ['employees-for-analysis'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
@@ -43,7 +43,7 @@ const SmartFeedbackGenerator = () => {
     }
   });
 
-  const generateFeedback = async () => {
+  const generateAnalysis = async () => {
     if (!selectedEmployee || !reviewPeriodStart || !reviewPeriodEnd) {
       toast.error('Please fill in all required fields');
       return;
@@ -56,60 +56,59 @@ const SmartFeedbackGenerator = () => {
           employeeId: selectedEmployee,
           reviewPeriodStart,
           reviewPeriodEnd,
-          feedbackType
+          feedbackType: analysisType
         }
       });
 
       if (error) throw error;
 
-      setGeneratedFeedback(data.feedback);
-      toast.success('Smart feedback generated successfully!');
+      setGeneratedAnalysis(data.feedback);
+      toast.success('HR analysis generated successfully!');
     } catch (error) {
-      console.error('Error generating feedback:', error);
-      toast.error('Failed to generate feedback. Please try again.');
+      console.error('Error generating analysis:', error);
+      toast.error('Failed to generate analysis. Please try again.');
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const saveFeedback = async () => {
-    if (!generatedFeedback || !selectedEmployee) return;
+  const saveAnalysis = async () => {
+    if (!generatedAnalysis || !selectedEmployee) return;
 
     setIsSaving(true);
     try {
-      // Additional save to performance_feedback table with user confirmation
       const { error } = await supabase
         .from('performance_feedback')
         .insert({
           employee_id: selectedEmployee,
-          feedback_type: 'manager_review',
-          feedback_text: generatedFeedback.content,
-          rating: generatedFeedback.suggestedRating,
+          feedback_type: 'hr_analysis',
+          feedback_text: generatedAnalysis.content,
+          rating: generatedAnalysis.suggestedRating,
           review_period_start: reviewPeriodStart,
           review_period_end: reviewPeriodEnd
         });
 
       if (error) throw error;
 
-      toast.success('Feedback saved successfully!');
+      toast.success('HR analysis saved successfully!');
       
       // Reset form
       setSelectedEmployee('');
       setReviewPeriodStart('');
       setReviewPeriodEnd('');
-      setGeneratedFeedback(null);
+      setGeneratedAnalysis(null);
     } catch (error) {
-      console.error('Error saving feedback:', error);
-      toast.error('Failed to save feedback');
+      console.error('Error saving analysis:', error);
+      toast.error('Failed to save analysis');
     } finally {
       setIsSaving(false);
     }
   };
 
   const copyToClipboard = () => {
-    if (generatedFeedback) {
-      navigator.clipboard.writeText(generatedFeedback.content);
-      toast.success('Feedback copied to clipboard!');
+    if (generatedAnalysis) {
+      navigator.clipboard.writeText(generatedAnalysis.content);
+      toast.success('Analysis copied to clipboard!');
     }
   };
 
@@ -120,18 +119,18 @@ const SmartFeedbackGenerator = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Sparkles className="w-5 h-5 text-purple-600" />
-            <span>Smart Feedback Generator</span>
+            <Brain className="w-5 h-5 text-purple-600" />
+            <span>AI-Powered HR Decision Analytics</span>
           </CardTitle>
           <p className="text-sm text-gray-600">
-            Generate AI-powered performance review comments based on employee data and metrics
+            Generate comprehensive employee insights and recommendations to help HR make informed decisions about promotions, salary adjustments, training, and retention strategies
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Employee Selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="employee">Select Employee</Label>
+              <Label htmlFor="employee">Select Employee for Analysis</Label>
               <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choose an employee" />
@@ -151,16 +150,16 @@ const SmartFeedbackGenerator = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="feedback-type">Feedback Style</Label>
-              <Select value={feedbackType} onValueChange={setFeedbackType}>
+              <Label htmlFor="analysis-type">Analysis Focus</Label>
+              <Select value={analysisType} onValueChange={setAnalysisType}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="comprehensive">Comprehensive Review</SelectItem>
-                  <SelectItem value="strengths_focused">Strengths Focused</SelectItem>
-                  <SelectItem value="development_focused">Development Focused</SelectItem>
-                  <SelectItem value="concise">Concise Summary</SelectItem>
+                  <SelectItem value="comprehensive">Comprehensive HR Review</SelectItem>
+                  <SelectItem value="promotion_readiness">Promotion Readiness</SelectItem>
+                  <SelectItem value="retention_risk">Retention Risk Assessment</SelectItem>
+                  <SelectItem value="performance_improvement">Performance Improvement</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -169,7 +168,7 @@ const SmartFeedbackGenerator = () => {
           {/* Review Period */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="start-date">Review Period Start</Label>
+              <Label htmlFor="start-date">Analysis Period Start</Label>
               <Input
                 id="start-date"
                 type="date"
@@ -178,7 +177,7 @@ const SmartFeedbackGenerator = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="end-date">Review Period End</Label>
+              <Label htmlFor="end-date">Analysis Period End</Label>
               <Input
                 id="end-date"
                 type="date"
@@ -191,7 +190,7 @@ const SmartFeedbackGenerator = () => {
           {/* Selected Employee Info */}
           {selectedEmployeeData && (
             <div className="p-4 bg-blue-50 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2">Selected Employee</h4>
+              <h4 className="font-medium text-blue-900 mb-2">Employee Profile</h4>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="font-medium">Name:</span> {selectedEmployeeData.first_name} {selectedEmployeeData.last_name}
@@ -200,10 +199,10 @@ const SmartFeedbackGenerator = () => {
                   <span className="font-medium">Department:</span> {selectedEmployeeData.department || 'N/A'}
                 </div>
                 <div>
-                  <span className="font-medium">Designation:</span> {selectedEmployeeData.designation || 'N/A'}
+                  <span className="font-medium">Position:</span> {selectedEmployeeData.designation || 'N/A'}
                 </div>
                 <div>
-                  <span className="font-medium">Review Period:</span> {reviewPeriodStart && reviewPeriodEnd ? `${reviewPeriodStart} to ${reviewPeriodEnd}` : 'Not set'}
+                  <span className="font-medium">Analysis Period:</span> {reviewPeriodStart && reviewPeriodEnd ? `${reviewPeriodStart} to ${reviewPeriodEnd}` : 'Not set'}
                 </div>
               </div>
             </div>
@@ -211,7 +210,7 @@ const SmartFeedbackGenerator = () => {
 
           {/* Generate Button */}
           <Button 
-            onClick={generateFeedback}
+            onClick={generateAnalysis}
             disabled={!selectedEmployee || !reviewPeriodStart || !reviewPeriodEnd || isGenerating}
             className="w-full"
             size="lg"
@@ -219,60 +218,60 @@ const SmartFeedbackGenerator = () => {
             {isGenerating ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generating AI Feedback...
+                Analyzing Employee Data...
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Generate Smart Feedback
+                <TrendingUp className="w-4 h-4 mr-2" />
+                Generate HR Decision Analysis
               </>
             )}
           </Button>
         </CardContent>
       </Card>
 
-      {/* Generated Feedback Display */}
-      {generatedFeedback && (
+      {/* Generated Analysis Display */}
+      {generatedAnalysis && (
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center space-x-2">
                 <Calendar className="w-5 h-5" />
-                <span>Generated Feedback</span>
+                <span>HR Decision Analysis</span>
               </CardTitle>
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="capitalize">
-                  {generatedFeedback.source.replace('_', ' ')}
+                  {generatedAnalysis.source.replace('_', ' ')} AI
                 </Badge>
                 <Badge variant="secondary">
-                  Rating: {generatedFeedback.suggestedRating}/5
+                  Score: {generatedAnalysis.suggestedRating}/5
                 </Badge>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Generated Feedback Content</Label>
+              <Label>HR Analysis & Recommendations</Label>
               <Textarea
-                value={generatedFeedback.content}
-                onChange={(e) => setGeneratedFeedback({
-                  ...generatedFeedback,
+                value={generatedAnalysis.content}
+                onChange={(e) => setGeneratedAnalysis({
+                  ...generatedAnalysis,
                   content: e.target.value
                 })}
-                rows={12}
-                className="resize-none"
-                placeholder="Generated feedback will appear here..."
+                rows={16}
+                className="resize-none font-mono text-sm"
+                placeholder="HR analysis and recommendations will appear here..."
               />
             </div>
 
             <div className="flex items-center space-x-3">
               <Button onClick={copyToClipboard} variant="outline" size="sm">
                 <Copy className="w-4 h-4 mr-2" />
-                Copy to Clipboard
+                Copy Analysis
               </Button>
               
               <Button 
-                onClick={saveFeedback}
+                onClick={saveAnalysis}
                 disabled={isSaving}
                 size="sm"
               >
@@ -284,14 +283,21 @@ const SmartFeedbackGenerator = () => {
                 ) : (
                   <>
                     <Save className="w-4 h-4 mr-2" />
-                    Save Feedback
+                    Save to Records
                   </>
                 )}
               </Button>
               
               <div className="text-xs text-gray-500">
-                Confidence: {Math.round(generatedFeedback.confidence * 100)}%
+                Confidence: {Math.round(generatedAnalysis.confidence * 100)}%
               </div>
+            </div>
+
+            <div className="p-3 bg-yellow-50 rounded-lg">
+              <p className="text-xs text-yellow-800">
+                <strong>Note:</strong> This AI-generated analysis is designed to assist HR decision-making. 
+                Please consider additional factors and conduct proper reviews before making final employment decisions.
+              </p>
             </div>
           </CardContent>
         </Card>
