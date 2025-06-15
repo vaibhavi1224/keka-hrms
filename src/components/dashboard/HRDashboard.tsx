@@ -31,13 +31,20 @@ const HRDashboard = () => {
   const { data: salaryData = { totalEmployees: 0, monthlyPayroll: 0 } } = useQuery({
     queryKey: ['salary-data'],
     queryFn: async () => {
-      // Get total active employees count
-      const { count: totalEmployees, error: employeeError } = await supabase
+      console.log('Fetching salary data...');
+      
+      // Get all active employees
+      const { data: activeEmployees, error: employeeError } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true })
+        .select('id')
         .eq('is_active', true);
 
-      if (employeeError) throw employeeError;
+      if (employeeError) {
+        console.error('Error fetching employees:', employeeError);
+        throw employeeError;
+      }
+
+      console.log('Active employees found:', activeEmployees?.length || 0);
 
       // Get salary structures for active employees
       const { data: salaryStructures, error: salaryError } = await supabase
@@ -50,15 +57,23 @@ const HRDashboard = () => {
         .eq('is_active', true)
         .eq('profiles.is_active', true);
 
-      if (salaryError) throw salaryError;
+      if (salaryError) {
+        console.error('Error fetching salary structures:', salaryError);
+        throw salaryError;
+      }
+
+      console.log('Salary structures found:', salaryStructures?.length || 0);
 
       // Calculate total monthly payroll (CTC / 12)
       const monthlyPayroll = salaryStructures?.reduce((total, structure) => {
         return total + (Number(structure.ctc) / 12);
       }, 0) || 0;
 
+      console.log('Total employees:', activeEmployees?.length || 0);
+      console.log('Monthly payroll:', Math.round(monthlyPayroll));
+
       return {
-        totalEmployees: totalEmployees || 0,
+        totalEmployees: activeEmployees?.length || 0,
         monthlyPayroll: Math.round(monthlyPayroll)
       };
     }
