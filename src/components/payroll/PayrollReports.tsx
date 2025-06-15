@@ -45,7 +45,7 @@ const PayrollReports = () => {
 
             <Button 
               variant="outline" 
-              className="h-32 flex flex-col items-center justify-center space-y-3 hover:bg-gray-50 border-2 border-black min-w-0"
+              className="h-32 flex flex-col items-center justify-center space-y-3 hover:bg-gray-50 border-2 min-w-0"
               onClick={() => setActiveTab('export')}
             >
               <Download className="w-8 h-8 text-green-600 flex-shrink-0" />
