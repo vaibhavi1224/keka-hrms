@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LogOut, Settings, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 import { toast } from 'sonner';
 import NotificationCenter from '@/components/common/NotificationCenter';
 import HRMSLogo from '@/components/common/HRMSLogo';
+import ProfileUpdateDialog from '@/components/profile/ProfileUpdateDialog';
 
 interface HeaderProps {
   userRole: string;
@@ -15,6 +17,7 @@ interface HeaderProps {
 
 const Header = ({ userRole, userName }: HeaderProps) => {
   const { signOut } = useAuth();
+  const { profile } = useProfile();
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -52,18 +55,20 @@ const Header = ({ userRole, userName }: HeaderProps) => {
           {/* Real-time Notifications */}
           <NotificationCenter />
           
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src="/placeholder.svg" alt={userName} />
-              <AvatarFallback>
-                {userName.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="hidden md:block">
-              <p className="text-sm font-medium text-gray-900">{userName}</p>
-              <p className="text-xs text-gray-500">{userRole}</p>
+          <ProfileUpdateDialog>
+            <div className="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={profile?.profile_picture || "/placeholder.svg"} alt={userName} />
+                <AvatarFallback>
+                  {userName.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="hidden md:block">
+                <p className="text-sm font-medium text-gray-900">{userName}</p>
+                <p className="text-xs text-gray-500">{userRole}</p>
+              </div>
             </div>
-          </div>
+          </ProfileUpdateDialog>
 
           <div className="flex items-center space-x-2">
             <Button variant="ghost" size="sm">
