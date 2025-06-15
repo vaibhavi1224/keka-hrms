@@ -2,8 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { RefreshCw, Brain, Info } from 'lucide-react';
+import { RefreshCw, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
 interface PredictionRecord {
   employee_id: string;
@@ -25,124 +24,146 @@ interface AttritionResultsDisplayProps {
   onRefresh: () => void;
 }
 
-const AttritionResultsDisplay = ({ 
-  predictions, 
-  isLoading, 
-  isRunning, 
-  onRefresh 
-}: AttritionResultsDisplayProps) => {
-  const getRiskColor = (riskLevel: string) => {
-    switch (riskLevel?.toUpperCase()) {
-      case 'HIGH': return 'bg-red-100 text-red-800 border-red-200';
-      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'LOW': return 'bg-green-100 text-green-800 border-green-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+const AttritionResultsDisplay = ({ predictions, isLoading, isRunning, onRefresh }: AttritionResultsDisplayProps) => {
+  const getRiskIcon = (riskLevel: string) => {
+    switch (riskLevel) {
+      case 'HIGH':
+        return <AlertTriangle className="w-4 h-4 text-red-600" />;
+      case 'MEDIUM':
+        return <Clock className="w-4 h-4 text-yellow-600" />;
+      case 'LOW':
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
+      default:
+        return <Clock className="w-4 h-4 text-gray-600" />;
     }
   };
 
-  const formatRiskFactors = (riskFactors: string[] | string | null | undefined): string[] => {
-    if (!riskFactors) return ['No specific risk factors identified'];
-    
-    if (Array.isArray(riskFactors)) {
-      return riskFactors.length > 0 ? riskFactors : ['No specific risk factors identified'];
+  const getRiskColor = (riskLevel: string) => {
+    switch (riskLevel) {
+      case 'HIGH':
+        return 'text-red-600 bg-red-50 border-red-200';
+      case 'MEDIUM':
+        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'LOW':
+        return 'text-green-600 bg-green-50 border-green-200';
+      default:
+        return 'text-gray-600 bg-gray-50 border-gray-200';
     }
-    
-    if (typeof riskFactors === 'string') {
+  };
+
+  const formatRiskFactors = (factors: string[] | string | null) => {
+    if (!factors) return [];
+    if (typeof factors === 'string') {
       try {
-        const parsed = JSON.parse(riskFactors);
-        return Array.isArray(parsed) ? parsed : [riskFactors];
+        return JSON.parse(factors);
       } catch {
-        return [riskFactors];
+        return [factors];
       }
     }
-    
-    return ['No specific risk factors identified'];
+    return factors;
   };
+
+  if (isLoading || isRunning) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <RefreshCw className="w-5 h-5 animate-spin" />
+            {isRunning ? 'Generating Predictions...' : 'Loading Results...'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <div className="animate-pulse">
+                <div className="w-8 h-8 bg-blue-200 rounded-full mx-auto mb-4"></div>
+                <p className="text-gray-600">
+                  {isRunning ? 'AI is analyzing employee data...' : 'Fetching prediction results...'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Latest Attrition Risk Analysis Results</span>
-          {predictions.length > 0 && (
-            <Button
-              onClick={onRefresh}
-              disabled={isLoading}
-              variant="ghost"
-              size="sm"
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
-            >
-              {isLoading ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4" />
-              )}
-              Refresh Data
-            </Button>
-          )}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>Attrition Prediction Results</CardTitle>
+          <Button 
+            onClick={onRefresh}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
-        {isLoading || isRunning ? (
+        {predictions.length === 0 ? (
           <div className="text-center py-8">
-            <RefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-4 animate-spin" />
+            <AlertTriangle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Predictions Available</h3>
             <p className="text-gray-600">
-              {isRunning ? 'Generating fresh predictions...' : 'Loading predictions...'}
+              Run an analysis on selected employees to see attrition predictions here.
             </p>
-          </div>
-        ) : predictions.length === 0 ? (
-          <div className="text-center py-8">
-            <Brain className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">No predictions available. Run analysis to see results.</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {predictions.map((prediction: PredictionRecord) => {
-              const riskFactors = formatRiskFactors(prediction.risk_factors);
-              
-              return (
-                <div key={prediction.employee_id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h4 className="font-medium">
+            {predictions.map((prediction) => (
+              <div
+                key={`${prediction.employee_id}-${prediction.predicted_at}`}
+                className={`p-4 rounded-lg border ${getRiskColor(prediction.risk_level)}`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      {getRiskIcon(prediction.risk_level)}
+                      <h4 className="font-semibold">
                         {prediction.profiles?.first_name} {prediction.profiles?.last_name}
                       </h4>
-                      <p className="text-sm text-gray-600">{prediction.profiles?.department}</p>
-                    </div>
-                    <div className="text-right">
-                      <Badge className={getRiskColor(prediction.risk_level)}>
+                      <span className="text-sm px-2 py-1 rounded-full bg-white bg-opacity-50">
                         {prediction.risk_level} RISK
-                      </Badge>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {(prediction.attrition_risk * 100).toFixed(1)}% risk
-                      </p>
+                      </span>
+                    </div>
+                    
+                    <div className="text-sm space-y-1">
+                      <p><span className="font-medium">Department:</span> {prediction.profiles?.department || 'N/A'}</p>
+                      <p><span className="font-medium">Risk Score:</span> {Math.round(prediction.attrition_risk * 100)}%</p>
+                      <p><span className="font-medium">Analyzed:</span> {new Date(prediction.predicted_at).toLocaleDateString()}</p>
                     </div>
                   </div>
                   
-                  {/* Risk Factors */}
-                  <div className="mt-3 p-3 bg-gray-50 rounded-md">
-                    <div className="flex items-start gap-2">
-                      <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-700 mb-1">Risk Factors:</p>
-                        <ul className="text-sm text-gray-600 space-y-1">
-                          {riskFactors.map((factor, index) => (
-                            <li key={index} className="flex items-start gap-1">
-                              <span className="w-1 h-1 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                              <span>{factor}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold">
+                      {Math.round(prediction.attrition_risk * 100)}%
+                    </div>
+                    <div className="text-xs opacity-75">
+                      Attrition Risk
                     </div>
                   </div>
-                  
-                  <p className="text-xs text-gray-500 mt-3">
-                    Analyzed: {new Date(prediction.predicted_at).toLocaleDateString()}
-                  </p>
                 </div>
-              );
-            })}
+                
+                {prediction.risk_factors && formatRiskFactors(prediction.risk_factors).length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-white border-opacity-50">
+                    <p className="text-sm font-medium mb-2">Risk Factors:</p>
+                    <ul className="text-sm space-y-1">
+                      {formatRiskFactors(prediction.risk_factors).map((factor, index) => (
+                        <li key={`factor-${prediction.employee_id}-${index}`} className="flex items-start gap-2">
+                          <span className="w-1 h-1 bg-current rounded-full mt-2 flex-shrink-0"></span>
+                          <span>{factor}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </CardContent>
