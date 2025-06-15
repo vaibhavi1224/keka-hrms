@@ -50,33 +50,48 @@ export async function seedPerformanceData(): Promise<SeedResult> {
         .gte('date', startDate.toISOString().split('T')[0])
         .lte('date', endDate.toISOString().split('T')[0]);
 
+      const { data: existingMetrics } = await supabase
+        .from('performance_metrics')
+        .select('measurement_date')
+        .eq('employee_id', employee.id)
+        .gte('measurement_date', startDate.toISOString().split('T')[0])
+        .lte('measurement_date', endDate.toISOString().split('T')[0]);
+
+      const { data: existingFeedback } = await supabase
+        .from('performance_feedback')
+        .select('review_period_start')
+        .eq('employee_id', employee.id)
+        .gte('review_period_start', startDate.toISOString().split('T')[0])
+        .lte('review_period_end', endDate.toISOString().split('T')[0]);
+
       // Filter out dates that already exist
       const existingDates = new Set(existingAttendance?.map(a => a.date) || []);
+      const existingMetricDates = new Set(existingMetrics?.map(m => m.measurement_date) || []);
+      const existingFeedbackDates = new Set(existingFeedback?.map(f => f.review_period_start) || []);
+      
       const newAttendance = attendance.filter(a => !existingDates.has(a.date));
+      const newMetrics = metrics.filter(m => !existingMetricDates.has(m.measurement_date));
+      const newFeedback = feedback.filter(f => !existingFeedbackDates.has(f.review_period_start));
 
       // Insert metrics
-      if (metrics.length > 0) {
+      if (newMetrics.length > 0) {
         const { error: metricsError } = await supabase
           .from('performance_metrics')
-          .insert(metrics);
+          .insert(newMetrics);
         
         if (metricsError) {
           console.error(`Error inserting metrics for ${employee.email}:`, metricsError);
-          errorCount++;
-          continue; // Skip to next employee
         }
       }
 
       // Insert feedback (only self-reviews to satisfy RLS)
-      if (feedback.length > 0) {
+      if (newFeedback.length > 0) {
         const { error: feedbackError } = await supabase
           .from('performance_feedback')
-          .insert(feedback);
+          .insert(newFeedback);
         
         if (feedbackError) {
           console.error(`Error inserting feedback for ${employee.email}:`, feedbackError);
-          errorCount++;
-          continue; // Skip to next employee
         }
       }
 
@@ -88,8 +103,6 @@ export async function seedPerformanceData(): Promise<SeedResult> {
         
         if (attendanceError) {
           console.error(`Error inserting attendance for ${employee.email}:`, attendanceError);
-          errorCount++;
-          continue; // Skip to next employee
         }
       }
 
@@ -102,6 +115,6 @@ export async function seedPerformanceData(): Promise<SeedResult> {
     }
   }
 
-  console.log(`Data seeding completed: ${successCount} successful, ${errorCount} errors`);
+  console.log(`Performance data seeding completed: ${successCount} successful, ${errorCount} errors`);
   return { success: successCount, errors: errorCount };
 }
