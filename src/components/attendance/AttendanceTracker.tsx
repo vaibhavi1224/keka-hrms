@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import BiometricAuth from './BiometricAuth';
+import FaceVerification from './FaceVerification';
 import AttendanceHeader from './AttendanceHeader';
 import TodayAttendanceCard from './TodayAttendanceCard';
 import LocationCard from './LocationCard';
@@ -17,21 +17,21 @@ const AttendanceTracker = () => {
   const [checkOutTime, setCheckOutTime] = useState<string | null>(null);
   const [weeklyAttendance, setWeeklyAttendance] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showBiometric, setShowBiometric] = useState(false);
-  const [biometricAction, setBiometricAction] = useState<'checkin' | 'checkout'>('checkin');
-  const [useBiometric, setUseBiometric] = useState(false);
+  const [showFaceVerification, setShowFaceVerification] = useState(false);
+  const [faceVerificationAction, setFaceVerificationAction] = useState<'checkin' | 'checkout'>('checkin');
+  const [useFaceVerification, setUseFaceVerification] = useState(false);
 
   useEffect(() => {
     if (profile?.id) {
       checkTodayAttendance();
       fetchWeeklyAttendance();
-      checkBiometricPreference();
+      checkFaceVerificationPreference();
     }
   }, [profile?.id]);
 
-  const checkBiometricPreference = () => {
-    const preference = localStorage.getItem('useBiometricAuth');
-    setUseBiometric(preference === 'true');
+  const checkFaceVerificationPreference = () => {
+    const preference = localStorage.getItem('useFaceVerification');
+    setUseFaceVerification(preference === 'true');
   };
 
   const checkTodayAttendance = async () => {
@@ -93,17 +93,17 @@ const AttendanceTracker = () => {
           date: today,
           check_in_time: now,
           status: 'present',
-          biometric_verified: showBiometric
+          biometric_verified: showFaceVerification
         });
 
       if (error) throw error;
 
       setIsCheckedIn(true);
       setCheckInTime(new Date().toLocaleTimeString());
-      setShowBiometric(false);
+      setShowFaceVerification(false);
       toast({
         title: "Clocked In Successfully",
-        description: `Clocked in at ${new Date().toLocaleTimeString()}${showBiometric ? ' (Biometric Verified)' : ''}`,
+        description: `Clocked in at ${new Date().toLocaleTimeString()}${showFaceVerification ? ' (Face Verified)' : ''}`,
       });
     } catch (error) {
       console.error('Clock in error:', error);
@@ -130,7 +130,7 @@ const AttendanceTracker = () => {
         .update({
           check_out_time: now,
           updated_at: now,
-          biometric_verified_out: showBiometric
+          biometric_verified_out: showFaceVerification
         })
         .eq('user_id', profile.id)
         .eq('date', today);
@@ -139,10 +139,10 @@ const AttendanceTracker = () => {
 
       setIsCheckedIn(false);
       setCheckOutTime(new Date().toLocaleTimeString());
-      setShowBiometric(false);
+      setShowFaceVerification(false);
       toast({
         title: "Clocked Out Successfully",
-        description: `Clocked out at ${new Date().toLocaleTimeString()}${showBiometric ? ' (Biometric Verified)' : ''}`,
+        description: `Clocked out at ${new Date().toLocaleTimeString()}${showFaceVerification ? ' (Face Verified)' : ''}`,
       });
     } catch (error) {
       console.error('Clock out error:', error);
@@ -157,52 +157,52 @@ const AttendanceTracker = () => {
   };
 
   const handleCheckIn = () => {
-    if (useBiometric) {
-      setBiometricAction('checkin');
-      setShowBiometric(true);
+    if (useFaceVerification) {
+      setFaceVerificationAction('checkin');
+      setShowFaceVerification(true);
     } else {
       performCheckIn();
     }
   };
 
   const handleCheckOut = () => {
-    if (useBiometric) {
-      setBiometricAction('checkout');
-      setShowBiometric(true);
+    if (useFaceVerification) {
+      setFaceVerificationAction('checkout');
+      setShowFaceVerification(true);
     } else {
       performCheckOut();
     }
   };
 
-  const handleBiometricSuccess = () => {
-    if (biometricAction === 'checkin') {
+  const handleFaceVerificationSuccess = () => {
+    if (faceVerificationAction === 'checkin') {
       performCheckIn();
     } else {
       performCheckOut();
     }
   };
 
-  const toggleBiometricPreference = () => {
-    const newPreference = !useBiometric;
-    setUseBiometric(newPreference);
-    localStorage.setItem('useBiometricAuth', newPreference.toString());
+  const toggleFaceVerificationPreference = () => {
+    const newPreference = !useFaceVerification;
+    setUseFaceVerification(newPreference);
+    localStorage.setItem('useFaceVerification', newPreference.toString());
     toast({
-      title: newPreference ? "Biometric Enabled" : "Biometric Disabled",
-      description: `Biometric authentication ${newPreference ? 'enabled' : 'disabled'} for attendance.`,
+      title: newPreference ? "Face Verification Enabled" : "Face Verification Disabled",
+      description: `Face verification ${newPreference ? 'enabled' : 'disabled'} for attendance.`,
     });
   };
 
-  if (showBiometric) {
+  if (showFaceVerification) {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Biometric Attendance</h1>
-          <p className="text-gray-600 mt-1">Secure attendance tracking with biometric verification.</p>
+          <h1 className="text-2xl font-bold text-gray-900">Face Verification Attendance</h1>
+          <p className="text-gray-600 mt-1">Secure attendance tracking with facial verification.</p>
         </div>
         <div className="flex justify-center">
-          <BiometricAuth 
-            onSuccess={handleBiometricSuccess}
-            action={biometricAction}
+          <FaceVerification 
+            onSuccess={handleFaceVerificationSuccess}
+            action={faceVerificationAction}
           />
         </div>
       </div>
@@ -212,8 +212,8 @@ const AttendanceTracker = () => {
   return (
     <div className="space-y-6">
       <AttendanceHeader 
-        useBiometric={useBiometric}
-        onToggleBiometric={toggleBiometricPreference}
+        useBiometric={useFaceVerification}
+        onToggleBiometric={toggleFaceVerificationPreference}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -222,7 +222,7 @@ const AttendanceTracker = () => {
           checkInTime={checkInTime}
           checkOutTime={checkOutTime}
           loading={loading}
-          useBiometric={useBiometric}
+          useBiometric={useFaceVerification}
           onCheckIn={handleCheckIn}
           onCheckOut={handleCheckOut}
         />

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Clock, MapPin } from 'lucide-react';
+import { Clock, MapPin, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +17,9 @@ const WelcomeHeader = ({ isCheckedIn, setIsCheckedIn, loading, setLoading }: Wel
   const { profile } = useProfile();
   const { toast } = useToast();
   const firstName = profile?.first_name || 'User';
+
+  // Check if face verification is enabled
+  const useFaceVerification = localStorage.getItem('useFaceVerification') === 'true';
 
   const handleClockIn = async () => {
     if (!profile?.id) return;
@@ -128,7 +131,7 @@ const WelcomeHeader = ({ isCheckedIn, setIsCheckedIn, loading, setLoading }: Wel
             onClick={handleClockIn}
             disabled={loading}
           >
-            <MapPin className="w-4 h-4 mr-2" />
+            {useFaceVerification ? <Camera className="w-4 h-4 mr-2" /> : <MapPin className="w-4 h-4 mr-2" />}
             {loading ? 'Clocking In...' : 'Clock In'}
           </Button>
         ) : (
@@ -137,7 +140,7 @@ const WelcomeHeader = ({ isCheckedIn, setIsCheckedIn, loading, setLoading }: Wel
             onClick={handleClockOut}
             disabled={loading}
           >
-            <Clock className="w-4 h-4 mr-2" />
+            {useFaceVerification ? <Camera className="w-4 h-4 mr-2" /> : <Clock className="w-4 h-4 mr-2" />}
             {loading ? 'Clocking Out...' : 'Clock Out'}
           </Button>
         )}

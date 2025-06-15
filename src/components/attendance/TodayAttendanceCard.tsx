@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Clock, Fingerprint } from 'lucide-react';
+import { Clock, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -68,7 +68,7 @@ const TodayAttendanceCard = ({
               disabled={loading}
               className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg flex items-center gap-2"
             >
-              {useBiometric && <Fingerprint className="w-4 h-4" />}
+              {useBiometric && <Camera className="w-4 h-4" />}
               {loading ? 'Checking In...' : 'Check In'}
             </Button>
           ) : (
@@ -82,7 +82,7 @@ const TodayAttendanceCard = ({
                 variant="destructive"
                 className="px-8 py-3 text-lg flex items-center gap-2"
               >
-                {useBiometric && <Fingerprint className="w-4 h-4" />}
+                {useBiometric && <Camera className="w-4 h-4" />}
                 {loading ? 'Checking Out...' : 'Check Out'}
               </Button>
             </div>
