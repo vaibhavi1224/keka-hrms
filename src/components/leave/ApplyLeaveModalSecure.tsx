@@ -88,11 +88,15 @@ const ApplyLeaveModalSecure = ({ isOpen, onClose, onSuccess, leaveTypes, leaveBa
       const end = new Date(endDate);
       const daysRequested = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
+      // Get the leave type name for the legacy leave_type field
+      const selectedLeaveType = leaveTypes.find(lt => lt.id === leaveType);
+
       const { error } = await supabase
         .from('leave_requests')
         .insert({
           user_id: user.id,
           leave_type_id: leaveType,
+          leave_type: selectedLeaveType?.name || '',
           start_date: startDate,
           end_date: endDate,
           days_requested: daysRequested,

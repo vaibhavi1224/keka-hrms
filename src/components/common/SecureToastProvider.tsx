@@ -16,8 +16,6 @@ const SecureToastProvider = () => {
           wordBreak: 'break-word',
           maxWidth: '400px',
         },
-        // Custom data attributes for security scanning
-        'data-security': 'toast-message',
       }}
     />
   );
