@@ -64,11 +64,11 @@ export async function createEmployee(employee: EmployeeData): Promise<boolean> {
     } else {
       console.log(`Successfully created employee ${employee.email}`);
       
-      // Update the employees table with additional details if they don't exist
+      // Update the employees table and create bank details if they don't exist
       if (data.user_id) {
-        await updateEmployeeDetails(data.user_id, employee);
+        await createEmployeeRecord(data.user_id, employee);
         
-        // If banking details are provided, add them
+        // If banking details are provided, add them to employee_bank_details table
         if (employee.bankDetails) {
           await createBankDetails(data.user_id, employee.bankDetails);
         }
@@ -82,7 +82,7 @@ export async function createEmployee(employee: EmployeeData): Promise<boolean> {
   }
 }
 
-async function updateEmployeeDetails(userId: string, employee: EmployeeData): Promise<void> {
+async function createEmployeeRecord(userId: string, employee: EmployeeData): Promise<void> {
   try {
     // Check if employee record exists in employees table
     const { data: existingEmployee } = await supabase
@@ -91,44 +91,7 @@ async function updateEmployeeDetails(userId: string, employee: EmployeeData): Pr
       .eq('profile_id', userId)
       .single();
 
-    if (existingEmployee) {
-      // Update existing employee record with additional details if they are null
-      const updateData: any = {};
-      
-      if (!existingEmployee.address) {
-        updateData.address = `${Math.floor(Math.random() * 999) + 1}, ${['MG Road', 'Brigade Road', 'Commercial Street', 'Koramangala', 'Indiranagar'][Math.floor(Math.random() * 5)]}, Bangalore, Karnataka, ${560000 + Math.floor(Math.random() * 100)}`;
-      }
-      
-      if (!existingEmployee.emergency_contact_name) {
-        updateData.emergency_contact_name = `Emergency Contact ${Math.floor(Math.random() * 1000)}`;
-      }
-      
-      if (!existingEmployee.emergency_contact_phone) {
-        updateData.emergency_contact_phone = `+91${Math.floor(Math.random() * 9000000000) + 1000000000}`;
-      }
-      
-      if (!existingEmployee.bank_account_number && employee.bankDetails) {
-        updateData.bank_account_number = employee.bankDetails.account_number;
-      }
-      
-      if (!existingEmployee.bank_name && employee.bankDetails) {
-        updateData.bank_name = employee.bankDetails.bank_name;
-      }
-
-      // Only update if there are fields to update
-      if (Object.keys(updateData).length > 0) {
-        const { error } = await supabase
-          .from('employees')
-          .update(updateData)
-          .eq('profile_id', userId);
-
-        if (error) {
-          console.error(`Error updating employee details for ${userId}:`, error);
-        } else {
-          console.log(`Successfully updated employee details for ${userId}`);
-        }
-      }
-    } else {
+    if (!existingEmployee) {
       // Create new employee record if it doesn't exist
       const newEmployeeData = {
         profile_id: userId,
@@ -136,8 +99,8 @@ async function updateEmployeeDetails(userId: string, employee: EmployeeData): Pr
         address: `${Math.floor(Math.random() * 999) + 1}, ${['MG Road', 'Brigade Road', 'Commercial Street', 'Koramangala', 'Indiranagar'][Math.floor(Math.random() * 5)]}, Bangalore, Karnataka, ${560000 + Math.floor(Math.random() * 100)}`,
         emergency_contact_name: `Emergency Contact ${Math.floor(Math.random() * 1000)}`,
         emergency_contact_phone: `+91${Math.floor(Math.random() * 9000000000) + 1000000000}`,
-        bank_account_number: employee.bankDetails?.account_number || null,
-        bank_name: employee.bankDetails?.bank_name || null
+        bank_account_number: null, // We'll use employee_bank_details table instead
+        bank_name: null // We'll use employee_bank_details table instead
       };
 
       const { error } = await supabase
@@ -151,7 +114,7 @@ async function updateEmployeeDetails(userId: string, employee: EmployeeData): Pr
       }
     }
   } catch (error) {
-    console.error(`Error processing employee details for ${userId}:`, error);
+    console.error(`Error processing employee record for ${userId}:`, error);
   }
 }
 
@@ -159,6 +122,18 @@ async function createBankDetails(userId: string, bankDetails: EmployeeData['bank
   if (!bankDetails) return;
 
   try {
+    // Check if bank details already exist
+    const { data: existingBankDetails } = await supabase
+      .from('employee_bank_details')
+      .select('id')
+      .eq('employee_id', userId)
+      .single();
+
+    if (existingBankDetails) {
+      console.log(`Bank details already exist for ${userId}, skipping...`);
+      return;
+    }
+
     const { error } = await supabase
       .from('employee_bank_details')
       .insert({
