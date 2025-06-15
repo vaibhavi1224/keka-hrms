@@ -44,10 +44,12 @@ const AttritionPredictor = () => {
     }
   });
 
-  // Fetch existing predictions with a simpler approach
+  // Fetch existing predictions
   const { data: predictions = [], isLoading: loadingPredictions, refetch: refetchPredictions } = useQuery({
     queryKey: ['attrition-predictions'],
     queryFn: async () => {
+      console.log('Fetching attrition predictions...');
+      
       // Direct table query to avoid RPC issues
       const { data: predictionData, error } = await supabase
         .from('attrition_predictions')
@@ -60,8 +62,11 @@ const AttritionPredictor = () => {
       }
 
       if (!predictionData || predictionData.length === 0) {
+        console.log('No prediction data found');
         return [];
       }
+
+      console.log('Found prediction data:', predictionData.length, 'records');
 
       // Get employee names separately
       const employeeIds = predictionData.map(p => p.employee_id);
@@ -70,91 +75,110 @@ const AttritionPredictor = () => {
         .select('id, first_name, last_name, department')
         .in('id', employeeIds);
 
+      console.log('Found employee data:', employeeData?.length, 'records');
+
       // Combine data
-      return predictionData.map(prediction => ({
+      const combinedData = predictionData.map(prediction => ({
         ...prediction,
         profiles: employeeData?.find(emp => emp.id === prediction.employee_id) || null
       })) as PredictionRecord[];
+
+      console.log('Combined data:', combinedData.length, 'records');
+      return combinedData;
     }
   });
 
   // Clear all predictions mutation
   const clearPredictionsMutation = useMutation({
     mutationFn: async () => {
+      console.log('Clearing all predictions...');
+      
       const { error } = await supabase
         .from('attrition_predictions')
         .delete()
-        .gte('created_at', '1900-01-01'); // Delete all records by using a condition that matches all
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // This will match all records
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error clearing predictions:', error);
+        throw error;
+      }
+      
+      console.log('Successfully cleared all predictions');
     },
     onSuccess: () => {
       toast({
         title: "Analysis Cleared",
         description: "All previous attrition predictions have been removed.",
       });
+      // Invalidate and refetch the predictions
       queryClient.invalidateQueries({ queryKey: ['attrition-predictions'] });
     },
     onError: (error) => {
+      console.error('Clear predictions error:', error);
       toast({
         title: "Error",
         description: "Failed to clear existing predictions. Please try again.",
         variant: "destructive",
       });
-      console.error('Clear predictions error:', error);
     }
   });
-
-  // Clear old predictions function
-  const clearOldPredictions = async () => {
-    const { error } = await supabase
-      .from('attrition_predictions')
-      .delete()
-      .gte('created_at', '1900-01-01'); // Delete all records
-
-    if (error) {
-      console.error('Error clearing old predictions:', error);
-      throw error;
-    }
-  };
 
   // Run prediction mutation
   const runPredictionMutation = useMutation({
     mutationFn: async (employeeIds: string[]) => {
+      console.log('Running prediction for employees:', employeeIds);
+      
       // Clear old predictions first
-      await clearOldPredictions();
+      const { error: deleteError } = await supabase
+        .from('attrition_predictions')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+
+      if (deleteError) {
+        console.error('Error clearing old predictions:', deleteError);
+        throw deleteError;
+      }
+      
+      console.log('Cleared old predictions, now invoking edge function...');
       
       const { data, error } = await supabase.functions.invoke('attrition-predictor', {
         body: { employee_ids: employeeIds }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+      
+      console.log('Edge function response:', data);
       return data;
     },
     onSuccess: (data) => {
+      const count = data?.predictions?.length || 0;
       toast({
         title: "Analysis Complete",
-        description: `Successfully generated fresh attrition predictions for ${data.predictions.length} employees.`,
+        description: `Successfully generated fresh attrition predictions for ${count} employees.`,
       });
       // Force refresh the predictions data
       queryClient.invalidateQueries({ queryKey: ['attrition-predictions'] });
-      queryClient.refetchQueries({ queryKey: ['attrition-predictions'] });
     },
     onError: (error) => {
+      console.error('Prediction error:', error);
       toast({
         title: "Error",
         description: "Failed to generate attrition predictions. Please try again.",
         variant: "destructive",
       });
-      console.error('Prediction error:', error);
     }
   });
 
   const handleClearPredictions = () => {
+    console.log('Clear predictions button clicked');
     clearPredictionsMutation.mutate();
   };
 
   const handleRefreshData = () => {
+    console.log('Refresh data button clicked');
     refetchPredictions();
     toast({
       title: "Refreshing Data",
@@ -176,6 +200,7 @@ const AttritionPredictor = () => {
 
   const handleRunForAllEmployees = () => {
     const allEmployeeIds = employees.map(emp => emp.id);
+    console.log('Running prediction for all employees:', allEmployeeIds.length);
     runPredictionMutation.mutate(allEmployeeIds);
   };
 
@@ -206,7 +231,7 @@ const AttritionPredictor = () => {
           </Button>
           <Button 
             onClick={handleRunForAllEmployees}
-            disabled={runPredictionMutation.isPending}
+            disabled={runPredictionMutation.isPending || loadingEmployees}
             className="flex items-center gap-2"
           >
             {runPredictionMutation.isPending ? (
