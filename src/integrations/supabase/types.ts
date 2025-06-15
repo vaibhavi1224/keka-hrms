@@ -100,6 +100,57 @@ export type Database = {
           },
         ]
       }
+      compliance_logs: {
+        Row: {
+          created_at: string
+          created_by: string
+          employee_id: string
+          esi_contribution: number
+          id: string
+          month: string
+          pf_contribution: number
+          remarks: string | null
+          tds_deducted: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          employee_id: string
+          esi_contribution?: number
+          id?: string
+          month: string
+          pf_contribution?: number
+          remarks?: string | null
+          tds_deducted?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          employee_id?: string
+          esi_contribution?: number
+          id?: string
+          month?: string
+          pf_contribution?: number
+          remarks?: string | null
+          tds_deducted?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_logs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_logs_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           created_at: string
@@ -641,13 +692,20 @@ export type Database = {
           id: string
           lop_days: number
           lop_deduction: number
+          manual_adjustment_notes: string | null
+          manual_bonus: number
+          manual_deductions: number
           medical_allowance: number
           month: number
           net_pay: number
           notes: string | null
           other_allowances: number
           other_deductions: number
+          payslip_generated_at: string | null
+          payslip_url: string | null
           pf: number
+          pf_employee: number
+          pf_employer: number
           present_days: number
           special_allowance: number
           status: string
@@ -672,13 +730,20 @@ export type Database = {
           id?: string
           lop_days?: number
           lop_deduction?: number
+          manual_adjustment_notes?: string | null
+          manual_bonus?: number
+          manual_deductions?: number
           medical_allowance?: number
           month: number
           net_pay?: number
           notes?: string | null
           other_allowances?: number
           other_deductions?: number
+          payslip_generated_at?: string | null
+          payslip_url?: string | null
           pf?: number
+          pf_employee?: number
+          pf_employer?: number
           present_days?: number
           special_allowance?: number
           status?: string
@@ -703,13 +768,20 @@ export type Database = {
           id?: string
           lop_days?: number
           lop_deduction?: number
+          manual_adjustment_notes?: string | null
+          manual_bonus?: number
+          manual_deductions?: number
           medical_allowance?: number
           month?: number
           net_pay?: number
           notes?: string | null
           other_allowances?: number
           other_deductions?: number
+          payslip_generated_at?: string | null
+          payslip_url?: string | null
           pf?: number
+          pf_employee?: number
+          pf_employer?: number
           present_days?: number
           special_allowance?: number
           status?: string
@@ -1058,6 +1130,63 @@ export type Database = {
           },
         ]
       }
+      salary_revision_logs: {
+        Row: {
+          approved_by: string
+          created_at: string
+          employee_id: string
+          id: string
+          new_basic_salary: number
+          new_ctc: number
+          old_basic_salary: number
+          old_ctc: number
+          revision_date: string
+          revision_notes: string | null
+          revision_reason: string | null
+        }
+        Insert: {
+          approved_by: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          new_basic_salary: number
+          new_ctc: number
+          old_basic_salary: number
+          old_ctc: number
+          revision_date?: string
+          revision_notes?: string | null
+          revision_reason?: string | null
+        }
+        Update: {
+          approved_by?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          new_basic_salary?: number
+          new_ctc?: number
+          old_basic_salary?: number
+          old_ctc?: number
+          revision_date?: string
+          revision_notes?: string | null
+          revision_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_revision_logs_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_revision_logs_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salary_structures: {
         Row: {
           basic_salary: number
@@ -1071,6 +1200,9 @@ export type Database = {
           is_active: boolean
           medical_allowance: number
           other_allowances: number
+          previous_ctc: number | null
+          revision_notes: string | null
+          revision_reason: string | null
           special_allowance: number
           transport_allowance: number
           updated_at: string
@@ -1087,6 +1219,9 @@ export type Database = {
           is_active?: boolean
           medical_allowance?: number
           other_allowances?: number
+          previous_ctc?: number | null
+          revision_notes?: string | null
+          revision_reason?: string | null
           special_allowance?: number
           transport_allowance?: number
           updated_at?: string
@@ -1103,6 +1238,9 @@ export type Database = {
           is_active?: boolean
           medical_allowance?: number
           other_allowances?: number
+          previous_ctc?: number | null
+          revision_notes?: string | null
+          revision_reason?: string | null
           special_allowance?: number
           transport_allowance?: number
           updated_at?: string
@@ -1269,6 +1407,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_payroll: {
+        Args: {
+          p_employee_id: string
+          p_month: number
+          p_year: number
+          p_manual_bonus?: number
+          p_manual_deductions?: number
+          p_manual_notes?: string
+        }
+        Returns: string
+      }
       get_user_permissions: {
         Args: { user_uuid: string }
         Returns: {

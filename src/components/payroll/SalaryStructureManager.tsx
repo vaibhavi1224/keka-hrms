@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +22,8 @@ interface SalaryStructure {
   ctc: number;
   effective_from: string;
   is_active: boolean;
+  revision_reason: string;
+  revision_notes: string;
   profiles: {
     first_name: string;
     last_name: string;
@@ -40,7 +42,9 @@ const SalaryStructureManager = () => {
     transport_allowance: 0,
     medical_allowance: 0,
     other_allowances: 0,
-    effective_from: new Date().toISOString().split('T')[0]
+    effective_from: new Date().toISOString().split('T')[0],
+    revision_reason: '',
+    revision_notes: ''
   });
 
   const { toast } = useToast();
@@ -79,6 +83,8 @@ const SalaryStructureManager = () => {
           ctc,
           effective_from,
           is_active,
+          revision_reason,
+          revision_notes,
           profiles!employee_id (
             first_name,
             last_name,
@@ -104,19 +110,28 @@ const SalaryStructureManager = () => {
       const ctc = data.basic_salary + data.hra + data.special_allowance + 
                  data.transport_allowance + data.medical_allowance + data.other_allowances;
 
+      // Get current structure for revision tracking
+      const { data: currentStructure } = await supabase
+        .from('salary_structures')
+        .select('ctc')
+        .eq('employee_id', selectedEmployee)
+        .eq('is_active', true)
+        .single();
+
       // Deactivate existing structures for this employee
       await supabase
         .from('salary_structures')
         .update({ is_active: false })
         .eq('employee_id', selectedEmployee);
 
-      // Create new structure
+      // Create new structure with revision tracking
       const { error } = await supabase
         .from('salary_structures')
         .insert({
           ...data,
           employee_id: selectedEmployee,
           ctc,
+          previous_ctc: currentStructure?.ctc || null,
           created_by: user.id
         });
 
@@ -128,6 +143,7 @@ const SalaryStructureManager = () => {
         description: "Salary structure updated successfully",
       });
       queryClient.invalidateQueries({ queryKey: ['salary-structures'] });
+      queryClient.invalidateQueries({ queryKey: ['salary-revision-logs'] });
       setIsEditing(false);
       setSelectedEmployee('');
       setFormData({
@@ -137,7 +153,9 @@ const SalaryStructureManager = () => {
         transport_allowance: 0,
         medical_allowance: 0,
         other_allowances: 0,
-        effective_from: new Date().toISOString().split('T')[0]
+        effective_from: new Date().toISOString().split('T')[0],
+        revision_reason: '',
+        revision_notes: ''
       });
     },
     onError: (error: any) => {
@@ -283,6 +301,29 @@ const SalaryStructureManager = () => {
               </div>
             </div>
 
+            {/* Revision Tracking Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="revision_reason">Revision Reason</Label>
+                <Input
+                  id="revision_reason"
+                  value={formData.revision_reason}
+                  onChange={(e) => setFormData(prev => ({ ...prev, revision_reason: e.target.value }))}
+                  placeholder="e.g., Annual increment, Promotion"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="revision_notes">Revision Notes</Label>
+                <Textarea
+                  id="revision_notes"
+                  value={formData.revision_notes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, revision_notes: e.target.value }))}
+                  placeholder="Additional notes about this revision"
+                  rows={2}
+                />
+              </div>
+            </div>
+
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex justify-between items-center">
                 <span className="text-lg font-semibold">Total CTC:</span>
@@ -306,7 +347,9 @@ const SalaryStructureManager = () => {
                     transport_allowance: 0,
                     medical_allowance: 0,
                     other_allowances: 0,
-                    effective_from: new Date().toISOString().split('T')[0]
+                    effective_from: new Date().toISOString().split('T')[0],
+                    revision_reason: '',
+                    revision_notes: ''
                   });
                 }}
               >
