@@ -24,6 +24,12 @@ const huggingFaceToken = Deno.env.get('HUGGING_FACE_ACCESS_TOKEN');
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+const HIGH_RISK_THRESHOLD = 0.7;
+const MEDIUM_RISK_THRESHOLD = 0.4;
+const LOW_RISK_THRESHOLD = 0.3;
+
+const DEFAULT_CONFIDENCE_SCORE = 0.75;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -36,7 +42,7 @@ serve(async (req) => {
 
     // Fetch employee data from our database
     const employeeData = await fetchEmployeeData(employee_ids);
-    console.log('📊 Employee data fetched:', employeeData.length, 'records');
+    console.log('📊 Employee data fetched:', employeeData.length, 'ecords');
     
     // Process predictions for each employee
     const predictions = [];
@@ -64,8 +70,8 @@ serve(async (req) => {
           risk_level: getRiskLevel(prediction.attrition_probability),
           factors: prediction.key_factors || [],
           last_predicted: new Date().toISOString(),
-          prediction_source: huggingFaceToken ? 'MISTRAL_ATTRITION_AI' : 'RULE_BASED',
-          confidence: prediction.confidence || 0.85
+          prediction_source: huggingFaceToken? 'MISTRAL_ATTRITION_AI' : 'RULE_BASED',
+          confidence: prediction.confidence || DEFAULT_CONFIDENCE_SCORE
         });
         
         // Store prediction in database
@@ -84,7 +90,7 @@ serve(async (req) => {
           factors: fallbackPrediction.key_factors,
           last_predicted: new Date().toISOString(),
           prediction_source: 'FALLBACK_RULE_BASED',
-          confidence: 0.70
+          confidence: DEFAULT_CONFIDENCE_SCORE
         });
         
         await storePrediction(employee.employee_id, fallbackPrediction.attrition_probability, fallbackPrediction.key_factors);
@@ -105,7 +111,7 @@ serve(async (req) => {
         success_rate: Math.round((predictions.length / employee_ids.length) * 100)
       }
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: {...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
@@ -119,7 +125,7 @@ serve(async (req) => {
       }),
       { 
         status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: {...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
   }
@@ -129,8 +135,8 @@ async function fetchEmployeeData(employee_ids: string[]) {
   console.log('📥 Fetching employee data for IDs:', employee_ids);
   
   const { data: employees, error } = await supabase
-    .from('profiles')
-    .select(`
+   .from('profiles')
+   .select(`
       id,
       first_name,
       last_name,
@@ -140,8 +146,8 @@ async function fetchEmployeeData(employee_ids: string[]) {
       role,
       manager_id
     `)
-    .in('id', employee_ids)
-    .eq('is_active', true);
+   .in('id', employee_ids)
+   .eq('is_active', true);
 
   if (error) {
     console.error('❌ Error fetching employees:', error);
@@ -158,42 +164,42 @@ async function fetchEmployeeData(employee_ids: string[]) {
     
     // Get performance metrics
     const { data: performanceData } = await supabase
-      .from('performance_metrics')
-      .select('metric_type, metric_value, measurement_date')
-      .eq('employee_id', emp.id)
-      .order('measurement_date', { ascending: false })
-      .limit(10);
+     .from('performance_metrics')
+     .select('metric_type, metric_value, measurement_date')
+     .eq('employee_id', emp.id)
+     .order('measurement_date', { ascending: false })
+     .limit(10);
 
     // Get attendance data
     const { data: attendanceData } = await supabase
-      .from('attendance')
-      .select('status, working_hours, date')
-      .eq('user_id', emp.id)
-      .gte('date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-      .order('date', { ascending: false });
+     .from('attendance')
+     .select('status, working_hours, date')
+     .eq('user_id', emp.id)
+     .gte('date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+     .order('date', { ascending: false });
 
     // Get salary structure
     const { data: salaryData } = await supabase
-      .from('salary_structures')
-      .select('ctc, basic_salary')
-      .eq('employee_id', emp.id)
-      .eq('is_active', true)
-      .single();
+     .from('salary_structures')
+     .select('ctc, basic_salary')
+     .eq('employee_id', emp.id)
+     .eq('is_active', true)
+     .single();
 
     // Get feedback/ratings
     const { data: feedbackData } = await supabase
-      .from('performance_feedback')
-      .select('rating, feedback_type, created_at')
-      .eq('employee_id', emp.id)
-      .order('created_at', { ascending: false })
-      .limit(5);
+     .from('performance_feedback')
+     .select('rating, feedback_type, created_at')
+     .eq('employee_id', emp.id)
+     .order('created_at', { ascending: false })
+     .limit(5);
 
     enrichedData.push({
       employee_id: emp.id,
       employee_name: `${emp.first_name} ${emp.last_name}`,
       department: emp.department,
       designation: emp.designation,
-      years_in_company: emp.date_of_joining ? 
+      years_in_company: emp.date_of_joining? 
         Math.floor((Date.now() - new Date(emp.date_of_joining).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 0,
       performance_metrics: performanceData || [],
       attendance_data: attendanceData || [],
@@ -215,7 +221,7 @@ async function callAttritionClassificationModel(employee: EmployeeAttritionData)
     console.log('📤 Sending to robloxguard200/employee_attrition_rate_model_mistral with input:', employeeInputText);
     
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/robloxguard200/employee_attrition_rate_model_mistral",
+      `https://api-inference.huggingface.co/models/robloxguard200/employee_attrition_rate_model_mistral`,
       {
         headers: {
           Authorization: `Bearer ${huggingFaceToken}`,
@@ -255,19 +261,19 @@ async function callAttritionClassificationModel(employee: EmployeeAttritionData)
 
 function createEmployeeInputTextForClassification(employee: EmployeeAttritionData): string {
   const avgRating = employee.feedback.length > 0 
-    ? employee.feedback.reduce((sum, f) => sum + (f.rating || 3), 0) / employee.feedback.length 
+   ? employee.feedback.reduce((sum, f) => sum + (f.rating || 3), 0) / employee.feedback.length 
     : 3;
   
   const avgWorkingHours = employee.attendance_data.length > 0
-    ? employee.attendance_data.reduce((sum, a) => sum + (a.working_hours || 8), 0) / employee.attendance_data.length
+   ? employee.attendance_data.reduce((sum, a) => sum + (a.working_hours || 8), 0) / employee.attendance_data.length
     : 8;
   
   const attendanceRate = employee.attendance_data.length > 0
-    ? (employee.attendance_data.filter(a => a.status === 'present').length / employee.attendance_data.length) * 100
+   ? (employee.attendance_data.filter(a => a.status === 'present').length / employee.attendance_data.length) * 100
     : 95;
 
   const avgPerformance = employee.performance_metrics.length > 0
-    ? employee.performance_metrics.reduce((sum, m) => sum + m.metric_value, 0) / employee.performance_metrics.length
+   ? employee.performance_metrics.reduce((sum, m) => sum + m.metric_value, 0) / employee.performance_metrics.length
     : 75;
 
   // Create structured text input that the model can classify
@@ -307,10 +313,10 @@ function parseClassificationResult(result: any, employee: EmployeeAttritionData)
           // Assume higher scores indicate higher risk
           probability = highestScore;
         }
-      } else if (classificationResults.score !== undefined) {
+      } else if (classificationResults.score!== undefined) {
         probability = classificationResults.score;
       }
-    } else if (result.score !== undefined) {
+    } else if (result.score!== undefined) {
       probability = result.score;
     }
     
@@ -331,7 +337,7 @@ function extractAIKeyFactors(employee: EmployeeAttritionData, probability: numbe
   const factors = ['AI-powered attrition analysis using Mistral classification model'];
   
   if (modelResult && Array.isArray(modelResult) && modelResult[0]) {
-    const results = Array.isArray(modelResult[0]) ? modelResult[0] : [modelResult[0]];
+    const results = Array.isArray(modelResult[0])? modelResult[0] : [modelResult[0]];
     
     // Extract top prediction labels as insights
     results.slice(0, 2).forEach(result => {
@@ -356,7 +362,7 @@ function extractAIKeyFactors(employee: EmployeeAttritionData, probability: numbe
   }
   
   const avgRating = employee.feedback.length > 0 
-    ? employee.feedback.reduce((sum, f) => sum + (f.rating || 3), 0) / employee.feedback.length 
+   ? employee.feedback.reduce((sum, f) => sum + (f.rating || 3), 0) / employee.feedback.length 
     : 3;
     
   if (avgRating < 2.5) {
@@ -374,7 +380,7 @@ function generateRuleBasedPrediction(employee: EmployeeAttritionData) {
   
   // Performance analysis
   const avgRating = employee.feedback.length > 0 
-    ? employee.feedback.reduce((sum, f) => sum + (f.rating || 3), 0) / employee.feedback.length 
+  ? employee.feedback.reduce((sum, f) => sum + (f.rating || 3), 0) / employee.feedback.length 
     : 3;
   
   if (avgRating < 2.5) {
@@ -457,8 +463,8 @@ function generateRuleBasedPrediction(employee: EmployeeAttritionData) {
 }
 
 function getRiskLevel(probability: number): string {
-  if (probability > 0.7) return 'HIGH';
-  if (probability > 0.4) return 'MEDIUM';
+  if (probability > HIGH_RISK_THRESHOLD) return 'HIGH';
+  if (probability > MEDIUM_RISK_THRESHOLD) return 'MEDIUM';
   return 'LOW';
 }
 
@@ -467,13 +473,13 @@ async function storePrediction(employeeId: string, attritionRisk: number, keyFac
     console.log(`💾 Storing prediction for employee: ${employeeId}`);
     
     const { error } = await supabase
-      .from('attrition_predictions')
-      .upsert({
+     .from('attrition_predictions')
+     .upsert({
         employee_id: employeeId,
         attrition_risk: attritionRisk,
         predicted_at: new Date().toISOString(),
         risk_level: getRiskLevel(attritionRisk),
-        model_version: 'mistral-attrition-classification-v1',
+        model_version: 'istral-attrition-classification-v1',
         risk_factors: keyFactors || []
       });
 
