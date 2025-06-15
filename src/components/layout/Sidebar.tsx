@@ -31,15 +31,9 @@ const Sidebar = ({ className }: SidebarProps) => {
     },
     {
       name: 'Employees',
-      href: '/employees',
+      href: '/employee-management',
       icon: Users,
       roles: ['hr', 'manager']
-    },
-    {
-      name: 'Employee Management',
-      href: '/employee-management',
-      icon: Building,
-      roles: ['hr']
     },
     {
       name: 'Attendance',

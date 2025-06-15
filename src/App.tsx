@@ -8,7 +8,6 @@ import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import Employees from "./pages/Employees";
 import EmployeeManagement from "./pages/EmployeeManagement";
 import Attendance from "./pages/Attendance";
 import Leave from "./pages/Leave";
@@ -33,14 +32,6 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Index />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/employees"
-              element={
-                <ProtectedRoute>
-                  <Employees />
                 </ProtectedRoute>
               }
             />

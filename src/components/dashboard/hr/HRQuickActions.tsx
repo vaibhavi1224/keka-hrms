@@ -32,7 +32,7 @@ const HRQuickActions = ({ onInviteEmployee }: HRQuickActionsProps) => {
             onClick={() => window.location.href = '/employee-management'}
           >
             <Users className="w-4 h-4 mr-2" />
-            Employee Management
+            Manage Employees
           </Button>
           
           <Button 
