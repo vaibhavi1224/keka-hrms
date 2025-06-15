@@ -3,11 +3,12 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { BarChart3, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { seedPerformanceData } from '@/utils/performanceDataSeeder';
+import { SeedResult } from '@/types/performanceData';
 import { useToast } from '@/hooks/use-toast';
 
 const SeedPerformanceDataButton = () => {
   const [isSeeding, setIsSeeding] = useState(false);
-  const [seedResult, setSeedResult] = useState<{ success: number; errors: number } | null>(null);
+  const [seedResult, setSeedResult] = useState<SeedResult | null>(null);
   const { toast } = useToast();
 
   const handleSeedData = async () => {
