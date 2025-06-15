@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +23,7 @@ interface PredictionRecord {
   attrition_risk: number;
   risk_level: string;
   predicted_at: string;
-  risk_factors?: string[];
+  risk_factors?: string[] | string | null;
   profiles: {
     first_name: string;
     last_name: string;
@@ -51,46 +52,37 @@ const AttritionPredictor = () => {
     }
   });
 
-  // Fetch existing predictions using raw query to avoid type issues
+  // Fetch existing predictions with a simpler approach
   const { data: predictions = [], isLoading: loadingPredictions } = useQuery({
     queryKey: ['attrition-predictions'],
     queryFn: async () => {
-      // Use raw SQL query to avoid TypeScript type issues until types are regenerated
-      const { data, error } = await supabase
-        .rpc('get_attrition_predictions_with_profiles');
+      // Direct table query to avoid RPC issues
+      const { data: predictionData, error } = await supabase
+        .from('attrition_predictions')
+        .select('employee_id, attrition_risk, risk_level, predicted_at, risk_factors')
+        .order('attrition_risk', { ascending: false });
 
       if (error) {
-        // Fallback to direct table query if RPC doesn't exist
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('attrition_predictions' as any)
-          .select(`
-            employee_id,
-            attrition_risk,
-            risk_level,
-            predicted_at,
-            risk_factors
-          `)
-          .order('attrition_risk', { ascending: false });
-
-        if (fallbackError) {
-          console.error('Error fetching predictions:', fallbackError);
-          return [];
-        }
-
-        // Get employee names separately
-        const employeeIds = fallbackData?.map(p => p.employee_id) || [];
-        const { data: employeeData } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, department')
-          .in('id', employeeIds);
-
-        // Combine data
-        return fallbackData?.map(prediction => ({
-          ...prediction,
-          profiles: employeeData?.find(emp => emp.id === prediction.employee_id) || null
-        })) || [];
+        console.error('Error fetching predictions:', error);
+        return [];
       }
-      return data || [];
+
+      if (!predictionData || predictionData.length === 0) {
+        return [];
+      }
+
+      // Get employee names separately
+      const employeeIds = predictionData.map(p => p.employee_id);
+      const { data: employeeData } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, department')
+        .in('id', employeeIds);
+
+      // Combine data
+      return predictionData.map(prediction => ({
+        ...prediction,
+        profiles: employeeData?.find(emp => emp.id === prediction.employee_id) || null
+      })) as PredictionRecord[];
     }
   });
 
@@ -147,7 +139,7 @@ const AttritionPredictor = () => {
     }
   };
 
-  const formatRiskFactors = (riskFactors: any): string[] => {
+  const formatRiskFactors = (riskFactors: string[] | string | null | undefined): string[] => {
     if (!riskFactors) return ['No specific risk factors identified'];
     
     if (Array.isArray(riskFactors)) {
@@ -193,6 +185,38 @@ const AttritionPredictor = () => {
           Analyze All Employees
         </Button>
       </div>
+
+      {/* Prediction Methodology Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Info className="w-5 h-5 text-blue-600" />
+            How We Predict Attrition Risk
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-2">AI Model Factors:</h4>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• Employee satisfaction levels (from feedback ratings)</li>
+                <li>• Performance evaluation scores</li>
+                <li>• Working hours patterns</li>
+                <li>• Tenure and department analysis</li>
+                <li>• Salary competitiveness</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-2">Risk Classifications:</h4>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• <span className="text-red-600 font-medium">High Risk</span>: >70% probability of leaving</li>
+                <li>• <span className="text-yellow-600 font-medium">Medium Risk</span>: 40-70% probability</li>
+                <li>• <span className="text-green-600 font-medium">Low Risk</span>: <40% probability</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
