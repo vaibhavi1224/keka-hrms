@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 interface PerformanceMetric {
@@ -26,7 +25,7 @@ interface AttendanceRecord {
   date: string;
   check_in_time: string;
   check_out_time: string;
-  status: string;
+  status: 'present' | 'absent' | 'late' | 'half_day';
   working_hours: number;
   biometric_verified: boolean;
   biometric_verified_out: boolean;
@@ -217,14 +216,16 @@ function generateAttendanceRecords(employeeId: string, startDate: Date, endDate:
           date: currentDate.toISOString().split('T')[0],
           check_in_time: checkInTime.toISOString(),
           check_out_time: checkOutTime.toISOString(),
-          status: 'present',
+          status: 'present' as const,
           working_hours: Math.round(workingHours * 100) / 100,
           biometric_verified: Math.random() > 0.1,
           biometric_verified_out: Math.random() > 0.1
         });
       } else {
-        // Absent or leave
-        const status = Math.random() > 0.5 ? 'absent' : 'leave';
+        // Absent or leave - use proper enum values
+        const statusOptions: ('absent' | 'late')[] = ['absent', 'late'];
+        const status = statusOptions[Math.floor(Math.random() * statusOptions.length)];
+        
         attendance.push({
           user_id: employeeId,
           date: currentDate.toISOString().split('T')[0],
