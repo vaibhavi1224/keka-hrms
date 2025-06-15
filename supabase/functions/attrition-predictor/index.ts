@@ -1,6 +1,6 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { pipeline } from 'https://esm.sh/@huggingface/transformers@3.0.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,9 +22,11 @@ interface EmployeeAttritionData {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const huggingFaceToken = Deno.env.get('HUGGING_FACE_ACCESS_TOKEN')!;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Global model cache
+let modelPipeline: any = null;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -35,7 +37,22 @@ serve(async (req) => {
     const { employee_ids } = await req.json();
     
     console.log('🔄 Processing attrition prediction for employees:', employee_ids);
-    console.log('🔑 HuggingFace token available:', huggingFaceToken ? 'Yes' : 'No');
+
+    // Initialize the model pipeline if not already loaded
+    if (!modelPipeline) {
+      console.log('🤖 Loading Hugging Face transformers model...');
+      try {
+        modelPipeline = await pipeline(
+          'text-classification',
+          'robloxguard200/employee_attrition_rate_model_mistral'
+        );
+        console.log('✅ Model loaded successfully');
+      } catch (modelError) {
+        console.error('❌ Failed to load transformers model:', modelError);
+        console.log('🔄 Falling back to business logic for all predictions');
+        modelPipeline = null;
+      }
+    }
 
     // Fetch employee data from our database
     const employeeData = await fetchEmployeeData(employee_ids);
@@ -43,33 +60,38 @@ serve(async (req) => {
     
     // Process predictions for each employee
     const predictions = [];
-    let aiModelSuccessCount = 0;
+    let transformersSuccessCount = 0;
     let fallbackCount = 0;
     
     for (const employee of employeeData) {
       try {
-        console.log(`🧠 Attempting AI prediction for employee: ${employee.employee_name}`);
-        const modelInput = prepareModelInput(employee);
-        const prediction = await callHuggingFaceModel(modelInput);
+        console.log(`🧠 Attempting transformers prediction for employee: ${employee.employee_name}`);
         
-        console.log(`✅ AI prediction successful for ${employee.employee_name}: ${prediction.attrition_probability}`);
-        aiModelSuccessCount++;
-        
-        predictions.push({
-          employee_id: employee.employee_id,
-          employee_name: employee.employee_name,
-          attrition_risk: prediction.attrition_probability,
-          risk_level: getRiskLevel(prediction.attrition_probability),
-          factors: prediction.key_factors || [],
-          last_predicted: new Date().toISOString(),
-          prediction_source: 'AI_MODEL'
-        });
-        
-        // Store prediction in database
-        await storePrediction(employee.employee_id, prediction.attrition_probability, prediction.key_factors);
+        if (modelPipeline) {
+          const modelInput = prepareModelInputForTransformers(employee);
+          const prediction = await callTransformersModel(modelInput);
+          
+          console.log(`✅ Transformers prediction successful for ${employee.employee_name}: ${prediction.attrition_probability}`);
+          transformersSuccessCount++;
+          
+          predictions.push({
+            employee_id: employee.employee_id,
+            employee_name: employee.employee_name,
+            attrition_risk: prediction.attrition_probability,
+            risk_level: getRiskLevel(prediction.attrition_probability),
+            factors: prediction.key_factors || [],
+            last_predicted: new Date().toISOString(),
+            prediction_source: 'TRANSFORMERS_JS'
+          });
+          
+          // Store prediction in database
+          await storePrediction(employee.employee_id, prediction.attrition_probability, prediction.key_factors);
+        } else {
+          throw new Error('Model not available');
+        }
         
       } catch (error) {
-        console.error(`❌ AI model failed for employee ${employee.employee_id}:`, error.message);
+        console.error(`❌ Transformers model failed for employee ${employee.employee_id}:`, error.message);
         console.log(`🔄 Using fallback prediction for ${employee.employee_name}`);
         
         // Fallback: generate prediction based on available data
@@ -84,7 +106,7 @@ serve(async (req) => {
           factors: fallbackPrediction.key_factors || [],
           last_predicted: new Date().toISOString(),
           prediction_source: 'FALLBACK_ALGORITHM',
-          note: 'Generated using business logic (AI model unavailable)'
+          note: 'Generated using business logic (Transformers model unavailable)'
         });
         
         // Store fallback prediction
@@ -94,17 +116,17 @@ serve(async (req) => {
 
     console.log('📈 Prediction Summary:');
     console.log(`  - Total predictions: ${predictions.length}`);
-    console.log(`  - AI model successes: ${aiModelSuccessCount}`);
+    console.log(`  - Transformers successes: ${transformersSuccessCount}`);
     console.log(`  - Fallback predictions: ${fallbackCount}`);
-    console.log(`  - AI model success rate: ${aiModelSuccessCount > 0 ? Math.round((aiModelSuccessCount / predictions.length) * 100) : 0}%`);
+    console.log(`  - Transformers success rate: ${transformersSuccessCount > 0 ? Math.round((transformersSuccessCount / predictions.length) * 100) : 0}%`);
 
     return new Response(JSON.stringify({ 
       predictions,
       summary: {
         total: predictions.length,
-        ai_successes: aiModelSuccessCount,
+        transformers_successes: transformersSuccessCount,
         fallback_used: fallbackCount,
-        ai_success_rate: aiModelSuccessCount > 0 ? Math.round((aiModelSuccessCount / predictions.length) * 100) : 0
+        transformers_success_rate: transformersSuccessCount > 0 ? Math.round((transformersSuccessCount / predictions.length) * 100) : 0
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -214,6 +236,134 @@ async function fetchEmployeeData(employee_ids: string[]) {
   return enrichedData;
 }
 
+function prepareModelInputForTransformers(employee: any): string {
+  console.log(`🔧 Preparing transformers input for: ${employee.employee_name}`);
+  
+  // Calculate satisfaction level from feedback ratings (0-1 scale)
+  const avgRating = employee.feedback.length > 0 
+    ? employee.feedback.reduce((sum: number, f: any) => sum + (f.rating || 3), 0) / employee.feedback.length 
+    : 3;
+  const satisfaction_level = (avgRating - 1) / 4; // Convert 1-5 scale to 0-1
+
+  // Calculate last evaluation score from performance metrics
+  const lastEvaluation = employee.performance_metrics.length > 0
+    ? employee.performance_metrics[0].metric_value / 100 // Assume metrics are 0-100, convert to 0-1
+    : 0.5;
+
+  // Calculate average monthly hours from attendance
+  const avgWorkingHours = employee.attendance_data.length > 0
+    ? employee.attendance_data.reduce((sum: number, a: any) => sum + (a.working_hours || 8), 0) / employee.attendance_data.length * 22 // Convert daily to monthly
+    : 176; // Default 8 hours * 22 working days
+
+  // Create a structured text input for the model
+  const textInput = `Employee profile: satisfaction_level=${satisfaction_level.toFixed(3)}, last_evaluation=${lastEvaluation.toFixed(3)}, number_project=${Math.min(7, Math.max(1, employee.performance_metrics.length || 2))}, average_monthly_hours=${Math.max(80, Math.min(310, avgWorkingHours))}, time_spend_company=${Math.max(1, Math.min(10, employee.years_in_company))}, department=${employee.department?.toLowerCase() || 'other'}, salary=${getSalaryLevel(employee.salary?.ctc || 600000)}`;
+
+  console.log(`📊 Transformers input prepared: ${textInput}`);
+  return textInput;
+}
+
+async function callTransformersModel(textInput: string) {
+  console.log('🤖 Calling transformers model with input:', textInput);
+
+  try {
+    const result = await modelPipeline(textInput);
+    console.log('🔍 Raw transformers result:', JSON.stringify(result, null, 2));
+    
+    // Process the result based on model output format
+    let attrition_probability = 0.3; // Default fallback
+    
+    if (Array.isArray(result) && result.length > 0) {
+      // Check for attrition-related labels
+      const attritionResult = result.find(r => 
+        r.label && (
+          r.label.toLowerCase().includes('leave') || 
+          r.label.toLowerCase().includes('quit') ||
+          r.label.toLowerCase().includes('attrition') ||
+          r.label.toLowerCase().includes('1') // Often models use 1 for positive class
+        )
+      );
+      
+      if (attritionResult) {
+        attrition_probability = attritionResult.score;
+      } else if (result[0] && typeof result[0].score === 'number') {
+        // Use the first result if no specific attrition label found
+        attrition_probability = result[0].score;
+      }
+    }
+    
+    // Ensure probability is in valid range
+    attrition_probability = Math.max(0.1, Math.min(0.9, attrition_probability));
+    
+    console.log('📊 Processed attrition probability:', attrition_probability);
+    
+    return {
+      attrition_probability,
+      key_factors: extractKeyFactorsFromInput(textInput, attrition_probability)
+    };
+    
+  } catch (error) {
+    console.error('💥 Transformers model call failed:', error.message);
+    throw error;
+  }
+}
+
+function extractKeyFactorsFromInput(textInput: string, probability: number): string[] {
+  const factors = [];
+  
+  // Extract values from the text input
+  const satisfactionMatch = textInput.match(/satisfaction_level=([\d.]+)/);
+  const evaluationMatch = textInput.match(/last_evaluation=([\d.]+)/);
+  const hoursMatch = textInput.match(/average_monthly_hours=([\d.]+)/);
+  const tenureMatch = textInput.match(/time_spend_company=([\d.]+)/);
+  const salaryMatch = textInput.match(/salary=(\w+)/);
+  
+  if (satisfactionMatch && parseFloat(satisfactionMatch[1]) < 0.4) {
+    factors.push('Low satisfaction level detected');
+  }
+  if (evaluationMatch && parseFloat(evaluationMatch[1]) < 0.5) {
+    factors.push('Below average performance evaluation');
+  }
+  if (hoursMatch && parseFloat(hoursMatch[1]) > 250) {
+    factors.push('Excessive working hours (potential burnout)');
+  }
+  if (tenureMatch) {
+    const tenure = parseFloat(tenureMatch[1]);
+    if (tenure < 2) {
+      factors.push('Short tenure with company');
+    } else if (tenure > 8) {
+      factors.push('Long tenure (may seek new challenges)');
+    }
+  }
+  if (salaryMatch && salaryMatch[1] === 'low') {
+    factors.push('Below market salary range');
+  }
+  
+  // Add prediction confidence factors
+  if (probability > 0.7) {
+    factors.push('High attrition probability detected by AI model');
+  } else if (probability > 0.4) {
+    factors.push('Moderate attrition risk identified');
+  } else {
+    factors.push('Low attrition risk with stable indicators');
+  }
+  
+  return factors.length > 0 ? factors : ['AI model analysis completed'];
+}
+
+function generateFallbackPrediction(employee: any) {
+  console.log(`🔄 Generating fallback prediction for: ${employee.employee_name}`);
+  
+  const inputData = prepareModelInput(employee);
+  const probability = generateBusinessLogicPrediction(inputData);
+  
+  console.log(`📊 Fallback prediction: ${probability} for ${employee.employee_name}`);
+  
+  return {
+    attrition_probability: probability,
+    key_factors: extractKeyFactors(inputData, probability)
+  };
+}
+
 function prepareModelInput(employee: any): EmployeeAttritionData {
   console.log(`🔧 Preparing model input for: ${employee.employee_name}`);
   
@@ -257,57 +407,6 @@ function prepareModelInput(employee: any): EmployeeAttritionData {
   return modelInput;
 }
 
-async function callHuggingFaceModel(input: EmployeeAttritionData) {
-  // Try a more reliable approach - use a general classification model
-  const modelEndpoint = 'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium';
-
-  console.log('🤖 Calling Hugging Face API...');
-  console.log('📡 Model endpoint:', modelEndpoint);
-
-  try {
-    const response = await fetch(modelEndpoint, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${huggingFaceToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        inputs: `Based on employee data: satisfaction ${input.satisfaction_level}, evaluation ${input.last_evaluation}, projects ${input.number_project}, hours ${input.average_montly_hours}, tenure ${input.time_spend_company}, predict attrition probability as a number between 0.1 and 0.9`,
-        parameters: {
-          max_length: 50,
-          temperature: 0.7
-        }
-      }),
-    });
-
-    console.log('📡 API Response status:', response.status);
-    console.log('📡 API Response headers:', Object.fromEntries(response.headers.entries()));
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ API Error Response:', errorText);
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
-    }
-
-    const result = await response.json();
-    console.log('🔍 Raw API response:', JSON.stringify(result, null, 2));
-    
-    // Since the specific model isn't working, let's generate a realistic prediction
-    // based on the input data using our business logic
-    const businessLogicProbability = generateBusinessLogicPrediction(input);
-    
-    return {
-      attrition_probability: businessLogicProbability,
-      key_factors: extractKeyFactors(input, businessLogicProbability)
-    };
-    
-  } catch (error) {
-    console.error('💥 Hugging Face API call failed:', error.message);
-    console.error('🔍 Error details:', error);
-    throw error;
-  }
-}
-
 function generateBusinessLogicPrediction(input: EmployeeAttritionData): number {
   let risk_score = 0.3; // Base risk
 
@@ -334,20 +433,6 @@ function generateBusinessLogicPrediction(input: EmployeeAttritionData): number {
   else if (input.number_project < 2) risk_score += 0.05;
 
   return Math.max(0.1, Math.min(0.9, risk_score));
-}
-
-function generateFallbackPrediction(employee: any) {
-  console.log(`🔄 Generating fallback prediction for: ${employee.employee_name}`);
-  
-  const inputData = prepareModelInput(employee);
-  const probability = generateBusinessLogicPrediction(inputData);
-  
-  console.log(`📊 Fallback prediction: ${probability} for ${employee.employee_name}`);
-  
-  return {
-    attrition_probability: probability,
-    key_factors: extractKeyFactors(inputData, probability)
-  };
 }
 
 function extractKeyFactors(input: EmployeeAttritionData, probability: number): string[] {
@@ -410,7 +495,7 @@ async function storePrediction(employeeId: string, attritionRisk: number, keyFac
         attrition_risk: attritionRisk,
         predicted_at: new Date().toISOString(),
         risk_level: getRiskLevel(attritionRisk),
-        model_version: 'business_logic_v1.0',
+        model_version: 'transformers_js_v1.0',
         risk_factors: keyFactors || []
       });
 
