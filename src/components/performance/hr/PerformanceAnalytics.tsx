@@ -42,7 +42,7 @@ const PerformanceAnalytics = () => {
           acc[dept] = { count: 0, totalRating: 0 };
         }
         acc[dept].count += 1;
-        acc[dept].totalRating += parseFloat(item.final_rating || '0');
+        acc[dept].totalRating += parseFloat(String(item.final_rating || 0));
         return acc;
       }, {});
 
@@ -64,7 +64,7 @@ const PerformanceAnalytics = () => {
       if (error) throw error;
       
       const distribution = (data || []).reduce((acc: any, item) => {
-        const rating = Math.floor(parseFloat(item.final_rating || '0'));
+        const rating = Math.floor(parseFloat(String(item.final_rating || 0)));
         const range = `${rating}-${rating + 0.9}`;
         acc[range] = (acc[range] || 0) + 1;
         return acc;
@@ -112,7 +112,7 @@ const PerformanceAnalytics = () => {
               <Award className="w-5 h-5 text-green-600" />
               <span className="text-2xl font-bold">
                 {performanceData.length > 0 
-                  ? Math.round((performanceData.reduce((sum, item) => sum + parseFloat(item.final_rating || '0'), 0) / performanceData.length) * 100) / 100
+                  ? Math.round((performanceData.reduce((sum, item) => sum + parseFloat(String(item.final_rating || 0)), 0) / performanceData.length) * 100) / 100
                   : 0
                 }
               </span>
@@ -128,7 +128,7 @@ const PerformanceAnalytics = () => {
             <div className="flex items-center space-x-2">
               <TrendingUp className="w-5 h-5 text-purple-600" />
               <span className="text-2xl font-bold">
-                {performanceData.filter(item => parseFloat(item.final_rating || '0') >= 4.5).length}
+                {performanceData.filter(item => parseFloat(String(item.final_rating || 0)) >= 4.5).length}
               </span>
             </div>
           </CardContent>

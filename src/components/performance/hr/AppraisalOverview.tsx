@@ -71,8 +71,8 @@ const AppraisalOverview = () => {
                       <User className="w-5 h-5" />
                       <span>{appraisal.employee?.first_name} {appraisal.employee?.last_name}</span>
                       {appraisal.final_rating && (
-                        <Badge className={getRatingColor(parseFloat(appraisal.final_rating))}>
-                          {appraisal.final_rating}/5.0
+                        <Badge className={getRatingColor(parseFloat(String(appraisal.final_rating)))}>
+                          {String(appraisal.final_rating)}/5.0
                         </Badge>
                       )}
                     </CardTitle>
