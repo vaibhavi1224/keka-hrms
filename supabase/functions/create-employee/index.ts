@@ -26,6 +26,8 @@ serve(async (req) => {
 
     const { name, email, password, role, department, designation, salary, date_of_joining } = await req.json()
 
+    console.log('Creating employee with data:', { name, email, role, department, designation })
+
     // Create user account via Supabase Auth Admin API
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
@@ -48,6 +50,8 @@ serve(async (req) => {
       )
     }
 
+    console.log('User created successfully, updating profile...')
+
     // Update the profile with employee details
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
@@ -55,7 +59,7 @@ serve(async (req) => {
         first_name: name.split(' ')[0],
         last_name: name.split(' ').slice(1).join(' ') || '',
         role: role as 'hr' | 'manager' | 'employee',
-        department: department || null,
+        department: department === 'no-department' ? null : department,
         designation: designation || null,
         date_of_joining: date_of_joining || null,
         status: 'ACTIVE',
@@ -74,8 +78,11 @@ serve(async (req) => {
       )
     }
 
+    console.log('Profile updated successfully')
+
     // Create employee record if salary is provided
     if (salary) {
+      console.log('Creating employee record with salary:', salary)
       const { error: employeeError } = await supabaseAdmin
         .from('employees')
         .insert({
@@ -93,7 +100,10 @@ serve(async (req) => {
           }
         )
       }
+      console.log('Employee record created successfully')
     }
+
+    console.log('Employee creation completed successfully')
 
     return new Response(
       JSON.stringify({ 
