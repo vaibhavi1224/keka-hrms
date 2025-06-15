@@ -64,7 +64,7 @@ const HRQuickActions = ({ onInviteEmployee, onOpenAttritionPredictor }: HRQuickA
           </Button>
 
           <Button   
-            className="min-h-16 p-4 flex items-center justify-start space-x-4 bg-aqua-600 hover:bg-aqua-700 text-white"
+            className="min-h-16 p-4 flex items-center justify-start space-x-4 bg-yellow-600 hover:bg-yellow-700 text-white"
             onClick={onOpenAttritionPredictor}
             >
             <Brain className="w-6 h-6 shrink-0" />
