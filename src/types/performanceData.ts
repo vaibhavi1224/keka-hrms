@@ -1,4 +1,4 @@
-export { SeedResult } from './seedingResults';
+export type { SeedResult } from './seedingResults';
 
 export interface PerformanceMetric {
   employee_id: string;
