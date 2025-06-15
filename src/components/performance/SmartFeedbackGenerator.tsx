@@ -136,12 +136,12 @@ const SmartFeedbackGenerator = () => {
                   <SelectValue placeholder="Choose an employee" />
                 </SelectTrigger>
                 <SelectContent>
-                  {employees.map((employee) => (
+                  {employees.filter(emp => emp.id && emp.first_name && emp.last_name).map((employee) => (
                     <SelectItem key={employee.id} value={employee.id}>
                       <div className="flex items-center space-x-2">
                         <User className="w-4 h-4" />
                         <span>{employee.first_name} {employee.last_name}</span>
-                        <span className="text-xs text-gray-500">({employee.department})</span>
+                        <span className="text-xs text-gray-500">({employee.department || 'No Dept'})</span>
                       </div>
                     </SelectItem>
                   ))}

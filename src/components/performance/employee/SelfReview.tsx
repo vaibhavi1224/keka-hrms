@@ -104,7 +104,7 @@ const SelfReview = () => {
 
   const getAvailableCycles = () => {
     const submittedCycleIds = submittedReviews.map(r => r.review_cycle_id);
-    return activeCycles.filter(cycle => !submittedCycleIds.includes(cycle.id));
+    return activeCycles.filter(cycle => cycle && cycle.id && !submittedCycleIds.includes(cycle.id));
   };
 
   const renderStars = (rating: number) => {
@@ -143,7 +143,7 @@ const SelfReview = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {getAvailableCycles().map((cycle) => (
-                      <SelectItem key={cycle.id} value={cycle.id}>
+                      <SelectItem key={cycle.id} value={cycle.id || 'unknown'}>
                         {cycle.name} ({cycle.cycle_type})
                       </SelectItem>
                     ))}
@@ -207,8 +207,8 @@ const SelfReview = () => {
                 <div key={review.id} className="border rounded-lg p-4 space-y-3">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="font-semibold">{review.review_cycle?.name}</h4>
-                      <p className="text-sm text-gray-600">{review.review_cycle?.cycle_type} Review</p>
+                      <h4 className="font-semibold">{review.review_cycle?.name || 'Unknown Cycle'}</h4>
+                      <p className="text-sm text-gray-600">{review.review_cycle?.cycle_type || 'Unknown'} Review</p>
                     </div>
                     <div className="flex items-center space-x-2">
                       <div className="flex items-center space-x-1">
