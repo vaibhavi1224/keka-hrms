@@ -1633,7 +1633,64 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      view_attendance_summary: {
+        Row: {
+          check_in_time: string | null
+          check_out_time: string | null
+          day: string | null
+          employee_id: string | null
+          full_name: string | null
+          status: Database["public"]["Enums"]["attendance_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_user_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      view_leave_report: {
+        Row: {
+          employee_id: string | null
+          from_date: string | null
+          full_name: string | null
+          leave_type: string | null
+          reason: string | null
+          status: Database["public"]["Enums"]["leave_status"] | null
+          to_date: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_requests_user_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      view_payroll_summary: {
+        Row: {
+          deductions: number | null
+          employee_id: string | null
+          full_name: string | null
+          gross_salary: number | null
+          net_salary: number | null
+          salary_month: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payrolls_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calculate_final_rating: {
