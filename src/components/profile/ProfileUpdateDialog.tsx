@@ -235,19 +235,38 @@ const ProfileUpdateDialog = ({ children, targetProfile }: ProfileUpdateDialogPro
 
       if (profileError) throw profileError;
 
-      // Update or create employee record for personal data
-      const employeeUpdates = {
-        profile_id: currentProfile.id,
-        emergency_contact_name: data.emergency_contact_name || null,
-        emergency_contact_phone: data.emergency_contact_phone || null,
-        address: data.address || null,
-      };
+      // Handle employee data separately - check if record exists first
+      if (data.emergency_contact_name || data.emergency_contact_phone || data.address) {
+        const { data: existingEmployee } = await supabase
+          .from('employees')
+          .select('id')
+          .eq('profile_id', currentProfile.id)
+          .single();
 
-      const { error: employeeError } = await supabase
-        .from('employees')
-        .upsert(employeeUpdates, { onConflict: 'profile_id' });
+        const employeeUpdates = {
+          profile_id: currentProfile.id,
+          emergency_contact_name: data.emergency_contact_name || null,
+          emergency_contact_phone: data.emergency_contact_phone || null,
+          address: data.address || null,
+        };
 
-      if (employeeError) throw employeeError;
+        if (existingEmployee) {
+          // Update existing record
+          const { error: employeeError } = await supabase
+            .from('employees')
+            .update(employeeUpdates)
+            .eq('profile_id', currentProfile.id);
+
+          if (employeeError) throw employeeError;
+        } else {
+          // Insert new record
+          const { error: employeeError } = await supabase
+            .from('employees')
+            .insert(employeeUpdates);
+
+          if (employeeError) throw employeeError;
+        }
+      }
 
       toast({
         title: 'Profile updated',
