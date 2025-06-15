@@ -503,6 +503,164 @@ export type Database = {
           },
         ]
       }
+      performance_feedback: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          feedback_text: string
+          feedback_type: string
+          id: string
+          rating: number | null
+          review_period_end: string
+          review_period_start: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          employee_id: string
+          feedback_text: string
+          feedback_type: string
+          id?: string
+          rating?: number | null
+          review_period_end: string
+          review_period_start: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          feedback_text?: string
+          feedback_type?: string
+          id?: string
+          rating?: number | null
+          review_period_end?: string
+          review_period_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_feedback_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_feedback_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_insights: {
+        Row: {
+          confidence_score: number | null
+          employee_id: string
+          generated_at: string
+          id: string
+          insight_summary: string
+          insight_title: string
+          insight_type: string
+          is_active: boolean
+          period_end: string
+          period_start: string
+          supporting_data: Json | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          employee_id: string
+          generated_at?: string
+          id?: string
+          insight_summary: string
+          insight_title: string
+          insight_type: string
+          is_active?: boolean
+          period_end: string
+          period_start: string
+          supporting_data?: Json | null
+        }
+        Update: {
+          confidence_score?: number | null
+          employee_id?: string
+          generated_at?: string
+          id?: string
+          insight_summary?: string
+          insight_title?: string
+          insight_type?: string
+          is_active?: boolean
+          period_end?: string
+          period_start?: string
+          supporting_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_insights_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      performance_metrics: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          id: string
+          measurement_date: string
+          metric_type: string
+          metric_value: number
+          notes: string | null
+          quarter: number
+          target_value: number | null
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          employee_id: string
+          id?: string
+          measurement_date?: string
+          metric_type: string
+          metric_value: number
+          notes?: string | null
+          quarter: number
+          target_value?: number | null
+          year: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          id?: string
+          measurement_date?: string
+          metric_type?: string
+          metric_value?: number
+          notes?: string | null
+          quarter?: number
+          target_value?: number | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "performance_metrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "performance_metrics_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           auth_method: string | null
