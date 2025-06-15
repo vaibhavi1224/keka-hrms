@@ -159,6 +159,21 @@ ${bankDetails ? `
 - PAN: ${bankDetails.pan_number ? bankDetails.pan_number.slice(0, 3) + '****' + bankDetails.pan_number.slice(-1) : 'Not provided'}
 ` : '- Bank details not provided'}
 
+AVAILABLE PAGES AND FEATURES (provide these as clickable links when relevant):
+- Dashboard: /
+- Leave Management: /leave (apply for leave, view leave requests, check policies)
+- Attendance Tracking: /attendance (mark attendance, view records, weekly summaries)
+- HR Chat (Full Page): /hr-chat (dedicated HR assistance page)
+- Employee Directory: /employees (view colleague information, contact details)
+- Payroll: /payroll (view payslips, salary structures, download statements)
+
+QUICK ACTIONS AVAILABLE:
+- Apply for Leave: Available on Dashboard and Leave page
+- Mark Attendance: Available on Dashboard and Attendance page
+- View Payslips: Available on Dashboard and Payroll page
+- Update Profile: Available through profile settings
+- Contact Manager: Email ${managerInfo?.email || 'your assigned manager'}
+
 COMPANY POLICIES (General):
 - Annual Leave: 24 days per year
 - Sick Leave: 12 days per year  
@@ -185,10 +200,13 @@ REIMBURSEMENT POLICY:
 INSTRUCTIONS:
 - Provide personalized responses based on the employee's actual data
 - Be helpful, accurate, and professional
+- When mentioning pages or features, provide them as clickable links using this format: [Page Name](/page-url)
 - If asked about specific dates, balances, or records, refer to the actual data provided
 - For policies not covered or complex issues, direct them to contact HR at hr@company.com
 - Always be encouraging and supportive
 - If data is missing or incomplete, acknowledge it and suggest how they can update it
+- When suggesting actions, provide direct links to relevant pages
+- For urgent matters, remind users they can also contact their manager or HR directly
 `;
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`, {
