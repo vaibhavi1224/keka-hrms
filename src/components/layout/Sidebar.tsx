@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Home, Users, Calendar, FileText, DollarSign, BarChart, MessageCircle, TrendingUp } from 'lucide-react';
@@ -28,7 +29,7 @@ const Sidebar = () => {
     { 
       icon: Users, 
       label: 'Employees', 
-      path: '/employees',
+      path: '/employee-management',
       roles: ['manager', 'hr']
     },
     { 
@@ -47,7 +48,7 @@ const Sidebar = () => {
       icon: DollarSign, 
       label: 'Payroll', 
       path: '/payroll',
-      roles: ['hr']
+      roles: ['employee', 'manager', 'hr']
     },
     { 
       icon: TrendingUp, 
