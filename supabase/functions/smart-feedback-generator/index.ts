@@ -10,7 +10,7 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -36,9 +36,9 @@ serve(async (req) => {
     // Generate AI-powered feedback
     let generatedFeedback;
     
-    if (openaiApiKey) {
-      console.log('🚀 Using OpenAI for advanced feedback generation');
-      generatedFeedback = await generateAIFeedback(employeeData, feedbackType);
+    if (geminiApiKey) {
+      console.log('🚀 Using Gemini AI for advanced feedback generation');
+      generatedFeedback = await generateGeminiFeedback(employeeData, feedbackType);
     } else {
       console.log('📝 Using rule-based feedback generation');
       generatedFeedback = await generateRuleBasedFeedback(employeeData, feedbackType);
@@ -148,34 +148,37 @@ async function fetchEmployeePerformanceData(employeeId: string, startDate: strin
   };
 }
 
-async function generateAIFeedback(employeeData: any, feedbackType: string) {
+async function generateGeminiFeedback(employeeData: any, feedbackType: string) {
   const prompt = createFeedbackPrompt(employeeData, feedbackType);
   
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${openaiApiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert HR professional specializing in performance reviews. Generate constructive, specific, and actionable feedback based on employee performance data. Be professional, balanced, and focus on both strengths and areas for improvement.'
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      temperature: 0.7,
-      max_tokens: 800
+      contents: [{
+        parts: [{
+          text: `You are an expert HR professional specializing in performance reviews. Generate constructive, specific, and actionable feedback based on employee performance data. Be professional, balanced, and focus on both strengths and areas for improvement.\n\n${prompt}`
+        }]
+      }],
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 800,
+      }
     }),
   });
 
+  if (!response.ok) {
+    const errorData = await response.text();
+    console.error('Gemini API error:', errorData);
+    throw new Error(`Gemini API error: ${response.status} ${errorData}`);
+  }
+
   const data = await response.json();
-  const content = data.choices[0].message.content;
+  const content = data.candidates[0].content.parts[0].text;
   
   // Extract suggested rating from content or calculate based on data
   const suggestedRating = calculateSuggestedRating(employeeData);
@@ -183,7 +186,7 @@ async function generateAIFeedback(employeeData: any, feedbackType: string) {
   return {
     content: content.trim(),
     suggestedRating,
-    source: 'openai',
+    source: 'gemini',
     confidence: 0.9
   };
 }
