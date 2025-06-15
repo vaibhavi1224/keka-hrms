@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Sitemap, Users } from 'lucide-react';
+import { Network, Users } from 'lucide-react';
 import type { Employee, OrgChartNode } from '@/types/employee';
 
 const OrgChart = () => {
@@ -123,7 +123,7 @@ const OrgChart = () => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Sitemap className="w-5 h-5" />
+          <Network className="w-5 h-5" />
           Organization Chart
         </CardTitle>
         <p className="text-sm text-gray-600 flex items-center gap-1">

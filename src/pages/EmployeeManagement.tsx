@@ -6,7 +6,7 @@ import EmployeeList from '@/components/employees/EmployeeList';
 import DepartmentManager from '@/components/employees/DepartmentManager';
 import DesignationManager from '@/components/employees/DesignationManager';
 import OrgChart from '@/components/employees/OrgChart';
-import { Users, Building, Briefcase, Sitemap } from 'lucide-react';
+import { Users, Building, Briefcase, Network } from 'lucide-react';
 
 const EmployeeManagement = () => {
   return (
@@ -34,7 +34,7 @@ const EmployeeManagement = () => {
               Designations
             </TabsTrigger>
             <TabsTrigger value="org-chart" className="flex items-center gap-2">
-              <Sitemap className="w-4 h-4" />
+              <Network className="w-4 h-4" />
               Org Chart
             </TabsTrigger>
           </TabsList>
