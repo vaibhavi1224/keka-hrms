@@ -60,7 +60,7 @@ const Sidebar = () => {
       icon: BarChart, 
       label: 'Analytics', 
       path: '/analytics',
-      roles: ['manager', 'hr']
+      roles: ['hr']
     },
     { 
       icon: MessageCircle, 
