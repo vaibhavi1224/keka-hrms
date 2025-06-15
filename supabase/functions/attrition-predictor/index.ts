@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -209,21 +208,19 @@ async function fetchEmployeeData(employee_ids: string[]) {
 async function callHuggingFaceModel(employee: EmployeeAttritionData) {
   console.log(`🤖 Calling Hugging Face AI for: ${employee.employee_name}`);
   
-  const prompt = createPromptForEmployee(employee);
+  // Create a structured text for sentiment analysis
+  const employeeProfile = createEmployeeProfileText(employee);
   
   try {
-    const response = await fetch('https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium', {
+    // Use sentiment analysis model to determine job satisfaction
+    const response = await fetch('https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment-latest', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${huggingFaceToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        inputs: prompt,
-        parameters: {
-          max_length: 100,
-          temperature: 0.7
-        }
+        inputs: employeeProfile
       })
     });
 
@@ -234,14 +231,13 @@ async function callHuggingFaceModel(employee: EmployeeAttritionData) {
     const result = await response.json();
     console.log('🔍 Raw Hugging Face result:', JSON.stringify(result, null, 2));
     
-    // Extract attrition probability from AI response
-    const aiResponse = result[0]?.generated_text || '';
-    const attrition_probability = extractAttritionProbability(aiResponse, employee);
+    // Convert sentiment to attrition probability
+    const attrition_probability = convertSentimentToAttrition(result, employee);
     
     return {
       attrition_probability,
       confidence: 0.85,
-      key_factors: extractKeyFactors(employee, attrition_probability)
+      key_factors: extractAIKeyFactors(employee, attrition_probability)
     };
     
   } catch (error) {
@@ -250,7 +246,7 @@ async function callHuggingFaceModel(employee: EmployeeAttritionData) {
   }
 }
 
-function createPromptForEmployee(employee: EmployeeAttritionData): string {
+function createEmployeeProfileText(employee: EmployeeAttritionData): string {
   const avgRating = employee.feedback.length > 0 
     ? employee.feedback.reduce((sum, f) => sum + (f.rating || 3), 0) / employee.feedback.length 
     : 3;
@@ -263,24 +259,93 @@ function createPromptForEmployee(employee: EmployeeAttritionData): string {
     ? (employee.attendance_data.filter(a => a.status === 'present').length / employee.attendance_data.length) * 100
     : 95;
   
-  return `Analyze employee attrition risk: Employee has ${employee.years_in_company} years experience, ${avgRating}/5 performance rating, ${attendanceRate}% attendance rate, works ${avgWorkingHours} hours daily in ${employee.department}. Predict attrition likelihood as percentage.`;
+  // Create a narrative that sentiment analysis can evaluate
+  let profileText = `Employee satisfaction assessment: `;
+  
+  if (avgRating >= 4) {
+    profileText += `This employee is highly satisfied with excellent performance ratings and consistent attendance. `;
+  } else if (avgRating <= 2) {
+    profileText += `This employee shows signs of dissatisfaction with poor performance ratings and concerning work patterns. `;
+  } else {
+    profileText += `This employee shows average satisfaction levels with moderate performance ratings. `;
+  }
+  
+  if (avgWorkingHours > 10) {
+    profileText += `They are working long hours which may indicate stress or burnout. `;
+  } else if (avgWorkingHours < 6) {
+    profileText += `They work minimal hours which may indicate disengagement. `;
+  }
+  
+  if (attendanceRate < 80) {
+    profileText += `Poor attendance patterns suggest potential job dissatisfaction. `;
+  }
+  
+  if (employee.years_in_company < 1) {
+    profileText += `As a new employee, they may be evaluating their fit with the company. `;
+  } else if (employee.years_in_company > 5) {
+    profileText += `As a long-term employee, they show stability and commitment. `;
+  }
+  
+  return profileText;
 }
 
-function extractAttritionProbability(aiResponse: string, employee: EmployeeAttritionData): number {
-  // Try to extract percentage from AI response
-  const percentageMatch = aiResponse.match(/(\d+(?:\.\d+)?)%/);
-  if (percentageMatch) {
-    return Math.min(parseFloat(percentageMatch[1]) / 100, 1.0);
+function convertSentimentToAttrition(sentimentResult: any, employee: EmployeeAttritionData): number {
+  // Handle both array and single object responses
+  const sentiment = Array.isArray(sentimentResult) ? sentimentResult[0] : sentimentResult;
+  
+  if (!sentiment || !Array.isArray(sentiment)) {
+    console.log('⚠️ Unexpected sentiment format, using rule-based fallback');
+    return generateRuleBasedPrediction(employee).attrition_probability;
   }
   
-  // Try to extract decimal probability
-  const decimalMatch = aiResponse.match(/0\.\d+/);
-  if (decimalMatch) {
-    return parseFloat(decimalMatch[0]);
+  // Find the sentiment with highest score
+  const topSentiment = sentiment.reduce((prev, current) => 
+    (prev.score > current.score) ? prev : current
+  );
+  
+  let baseAttrition = 0.3; // Base 30% attrition risk
+  
+  // Convert sentiment to attrition probability
+  if (topSentiment.label.toLowerCase().includes('negative')) {
+    baseAttrition = 0.4 + (topSentiment.score * 0.4); // 40-80% risk for negative sentiment
+  } else if (topSentiment.label.toLowerCase().includes('positive')) {
+    baseAttrition = 0.1 + ((1 - topSentiment.score) * 0.3); // 10-40% risk for positive sentiment
+  } else {
+    baseAttrition = 0.3 + (topSentiment.score * 0.2); // 30-50% risk for neutral sentiment
   }
   
-  // Fallback to rule-based if AI response unclear
-  return generateRuleBasedPrediction(employee).attrition_probability;
+  // Apply additional factors
+  if (employee.years_in_company < 1) baseAttrition += 0.1;
+  if (employee.feedback.length > 0) {
+    const avgRating = employee.feedback.reduce((sum, f) => sum + (f.rating || 3), 0) / employee.feedback.length;
+    if (avgRating < 2.5) baseAttrition += 0.15;
+    if (avgRating > 4) baseAttrition -= 0.1;
+  }
+  
+  return Math.max(0, Math.min(1, baseAttrition));
+}
+
+function extractAIKeyFactors(employee: EmployeeAttritionData, probability: number): string[] {
+  const factors = ['AI sentiment analysis of employee satisfaction'];
+  
+  if (probability > 0.7) {
+    factors.push('High attrition risk detected through AI analysis');
+  } else if (probability > 0.4) {
+    factors.push('Moderate attrition indicators identified by AI');
+  } else {
+    factors.push('Low attrition risk assessed through AI sentiment analysis');
+  }
+  
+  // Add specific insights based on data
+  if (employee.years_in_company < 2) {
+    factors.push('Early career stage increases mobility risk');
+  }
+  
+  if (employee.performance_metrics.length === 0) {
+    factors.push('Limited performance data available for analysis');
+  }
+  
+  return factors;
 }
 
 function generateRuleBasedPrediction(employee: EmployeeAttritionData) {
@@ -373,29 +438,6 @@ function generateRuleBasedPrediction(employee: EmployeeAttritionData) {
   };
 }
 
-function extractKeyFactors(employee: EmployeeAttritionData, probability: number): string[] {
-  const factors = ['AI-powered prediction analysis'];
-  
-  if (probability > 0.7) {
-    factors.push('High attrition risk detected by AI model');
-  } else if (probability > 0.4) {
-    factors.push('Moderate attrition indicators identified');
-  } else {
-    factors.push('Low attrition risk assessed by AI');
-  }
-  
-  // Add specific insights based on data
-  if (employee.years_in_company < 2) {
-    factors.push('Early career stage - higher mobility risk');
-  }
-  
-  if (employee.performance_metrics.length === 0) {
-    factors.push('Limited performance data for analysis');
-  }
-  
-  return factors;
-}
-
 function getRiskLevel(probability: number): string {
   if (probability > 0.7) return 'HIGH';
   if (probability > 0.4) return 'MEDIUM';
@@ -413,7 +455,7 @@ async function storePrediction(employeeId: string, attritionRisk: number, keyFac
         attrition_risk: attritionRisk,
         predicted_at: new Date().toISOString(),
         risk_level: getRiskLevel(attritionRisk),
-        model_version: 'hybrid-ai-rule-based-v1',
+        model_version: 'hybrid-ai-rule-based-v2',
         risk_factors: keyFactors || []
       });
 
