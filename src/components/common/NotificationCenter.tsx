@@ -75,69 +75,85 @@ const NotificationCenter = () => {
   const fetchNotifications = async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(50);
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-    if (error) {
-      console.error('Error fetching notifications:', error);
-      return;
+      if (error) {
+        console.error('Error fetching notifications:', error);
+        return;
+      }
+
+      setNotifications(data || []);
+      setUnreadCount(data?.filter(n => !n.read).length || 0);
+    } catch (err) {
+      console.error('Error in fetchNotifications:', err);
     }
-
-    setNotifications(data || []);
-    setUnreadCount(data?.filter(n => !n.read).length || 0);
   };
 
   const markAsRead = async (notificationId: string) => {
-    const { error } = await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('id', notificationId);
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notificationId);
 
-    if (error) {
-      console.error('Error marking notification as read:', error);
-      return;
+      if (error) {
+        console.error('Error marking notification as read:', error);
+        return;
+      }
+
+      setNotifications(prev =>
+        prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Error in markAsRead:', err);
     }
-
-    setNotifications(prev =>
-      prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
-    );
-    setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
   const markAllAsRead = async () => {
     if (!user) return;
 
-    const { error } = await supabase
-      .from('notifications')
-      .update({ read: true })
-      .eq('user_id', user.id)
-      .eq('read', false);
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('user_id', user.id)
+        .eq('read', false);
 
-    if (error) {
-      console.error('Error marking all notifications as read:', error);
-      return;
+      if (error) {
+        console.error('Error marking all notifications as read:', error);
+        return;
+      }
+
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch (err) {
+      console.error('Error in markAllAsRead:', err);
     }
-
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    setUnreadCount(0);
   };
 
   const deleteNotification = async (notificationId: string) => {
-    const { error } = await supabase
-      .from('notifications')
-      .delete()
-      .eq('id', notificationId);
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId);
 
-    if (error) {
-      console.error('Error deleting notification:', error);
-      return;
+      if (error) {
+        console.error('Error deleting notification:', error);
+        return;
+      }
+
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    } catch (err) {
+      console.error('Error in deleteNotification:', err);
     }
-
-    setNotifications(prev => prev.filter(n => n.id !== notificationId));
   };
 
   const getNotificationIcon = (type: string) => {

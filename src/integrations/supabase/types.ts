@@ -598,6 +598,42 @@ export type Database = {
           },
         ]
       }
+      hr_documents: {
+        Row: {
+          category: string
+          created_at: string
+          employee_id: string | null
+          file_url: string
+          id: string
+          name: string
+          type: string
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          employee_id?: string | null
+          file_url: string
+          id?: string
+          name: string
+          type: string
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          employee_id?: string | null
+          file_url?: string
+          id?: string
+          name?: string
+          type?: string
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
       leave_accrual_logs: {
         Row: {
           accrual_date: string
@@ -819,6 +855,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       offboarding_logs: {
         Row: {
