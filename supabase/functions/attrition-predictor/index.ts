@@ -321,21 +321,21 @@ function extractKeyFactorsFromInput(textInput: string, probability: number): str
     factors.push('Low satisfaction level detected');
   }
   if (evaluationMatch && parseFloat(evaluationMatch[1]) < 0.5) {
-    factors.push('Below average performance evaluation');
+    factors.push('below average performance evaluation');
   }
   if (hoursMatch && parseFloat(hoursMatch[1]) > 250) {
-    factors.push('Excessive working hours (potential burnout)');
+    factors.push('excessive working hours (potential burnout)');
   }
   if (tenureMatch) {
     const tenure = parseFloat(tenureMatch[1]);
     if (tenure < 2) {
-      factors.push('Short tenure with company');
+      factors.push('short tenure with company');
     } else if (tenure > 8) {
       factors.push('Long tenure (may seek new challenges)');
     }
   }
   if (salaryMatch && salaryMatch[1] === 'low') {
-    factors.push('Below market salary range');
+    factors.push('below market salary range');
   }
   
   // Add prediction confidence factors
