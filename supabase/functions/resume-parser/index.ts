@@ -18,7 +18,7 @@ serve(async (req) => {
   }
 
   try {
-    const { resumeText, employeeId } = await req.json();
+    const { resumeText, employeeId, fileUrl } = await req.json();
 
     if (!resumeText || !employeeId) {
       throw new Error('Resume text and employee ID are required');
@@ -124,7 +124,24 @@ serve(async (req) => {
       }
     }
 
-    // Store extracted resume data in a new table for HR review
+    // Store the document record if fileUrl is provided
+    if (fileUrl) {
+      const { error: docError } = await supabase
+        .from('documents')
+        .upsert({
+          employee_id: employeeId,
+          document_type: 'resume',
+          document_name: 'Resume',
+          file_path: fileUrl,
+          uploaded_by: employeeId
+        }, { onConflict: 'employee_id,document_type' });
+
+      if (docError) {
+        console.error('Error storing document:', docError);
+      }
+    }
+
+    // Store extracted resume data in the resume_data table
     const { error: resumeError } = await supabase
       .from('resume_data')
       .upsert({

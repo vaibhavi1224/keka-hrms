@@ -1,13 +1,15 @@
 
-import React from 'react';
-import { Clock, Calendar, DollarSign, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { Clock, Calendar, DollarSign, User, Upload } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import ProfileUpdateDialog from '@/components/profile/ProfileUpdateDialog';
+import ResumeUploadDialog from '@/components/employee/ResumeUploadDialog';
 
 const QuickActions = () => {
   const navigate = useNavigate();
+  const [showResumeUpload, setShowResumeUpload] = useState(false);
 
   const handleClockInOut = () => {
     navigate('/attendance');
@@ -42,6 +44,13 @@ const QuickActions = () => {
       color: 'bg-purple-600 hover:bg-purple-700', 
       icon: DollarSign,
       action: handleViewPayslip
+    },
+    { 
+      title: 'Upload Resume', 
+      subtitle: 'Update resume', 
+      color: 'bg-indigo-600 hover:bg-indigo-700', 
+      icon: Upload,
+      action: () => setShowResumeUpload(true)
     },
   ];
 
@@ -79,6 +88,11 @@ const QuickActions = () => {
             </Button>
           </ProfileUpdateDialog>
         </div>
+        
+        <ResumeUploadDialog 
+          open={showResumeUpload} 
+          onOpenChange={setShowResumeUpload}
+        />
       </CardContent>
     </Card>
   );
