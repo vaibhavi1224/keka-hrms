@@ -36,7 +36,7 @@ const QuickActionsCard = () => {
             className="w-full justify-start bg-blue-600 hover:bg-blue-700 text-white"
           >
             <Calendar className="w-4 h-4 mr-2" />
-            Review Leave Requests (5 pending)
+            Review Leave Requests
           </Button>
           <Button 
             onClick={handleSchedulePerformanceReviews}
