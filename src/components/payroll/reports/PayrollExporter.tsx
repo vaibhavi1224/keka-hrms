@@ -212,7 +212,7 @@ const PayrollExporter = ({ onBack }: PayrollExporterProps) => {
                 <Checkbox 
                   id="allowances" 
                   checked={includeAllowances} 
-                  onCheckedChange={setIncludeAllowances} 
+                  onCheckedChange={(checked) => setIncludeAllowances(checked === true)} 
                 />
                 <label htmlFor="allowances" className="text-sm font-medium">
                   Include Allowances
@@ -223,7 +223,7 @@ const PayrollExporter = ({ onBack }: PayrollExporterProps) => {
                 <Checkbox 
                   id="deductions" 
                   checked={includeDeductions} 
-                  onCheckedChange={setIncludeDeductions} 
+                  onCheckedChange={(checked) => setIncludeDeductions(checked === true)} 
                 />
                 <label htmlFor="deductions" className="text-sm font-medium">
                   Include Deductions
@@ -234,7 +234,7 @@ const PayrollExporter = ({ onBack }: PayrollExporterProps) => {
                 <Checkbox 
                   id="taxes" 
                   checked={includeTaxes} 
-                  onCheckedChange={setIncludeTaxes} 
+                  onCheckedChange={(checked) => setIncludeTaxes(checked === true)} 
                 />
                 <label htmlFor="taxes" className="text-sm font-medium">
                   Include Tax Details
