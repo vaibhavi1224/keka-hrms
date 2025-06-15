@@ -27,10 +27,7 @@ const EmployeeList = () => {
       console.log('Fetching employees...');
       const { data, error } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          manager:profiles!profiles_manager_id_fkey(first_name, last_name)
-        `)
+        .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
@@ -58,9 +55,9 @@ const EmployeeList = () => {
   });
 
   const filteredEmployees = employees.filter(employee =>
-    `${employee.first_name} ${employee.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.department?.toLowerCase().includes(searchTerm.toLowerCase())
+    `${employee.first_name || ''} ${employee.last_name || ''}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (employee.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (employee.department || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAddSuccess = () => {
@@ -78,8 +75,14 @@ const EmployeeList = () => {
   };
 
   const isHR = profile?.role === 'hr';
+  
+  // Calculate stats from the employees data
+  const totalEmployees = employees.length;
+  const totalDepartments = departments.length;
   const hrCount = employees.filter(e => e.role === 'hr').length;
   const managerCount = employees.filter(e => e.role === 'manager').length;
+
+  console.log('Stats calculated:', { totalEmployees, totalDepartments, hrCount, managerCount });
 
   return (
     <div className="space-y-6">
@@ -89,8 +92,8 @@ const EmployeeList = () => {
       />
 
       <EmployeeStats
-        totalEmployees={employees.length}
-        totalDepartments={departments.length}
+        totalEmployees={totalEmployees}
+        totalDepartments={totalDepartments}
         hrCount={hrCount}
         managerCount={managerCount}
       />
