@@ -1,12 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { UserPlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useProfile } from '@/hooks/useProfile';
 import { useAddEmployee } from '@/hooks/useAddEmployee';
 import AddEmployeeForm from './AddEmployeeForm';
-import EmployeeCreatedSuccess from './EmployeeCreatedSuccess';
 
 interface AddEmployeeProps {
   onClose: () => void;
@@ -14,60 +12,41 @@ interface AddEmployeeProps {
 }
 
 const AddEmployee = ({ onClose, onSuccess }: AddEmployeeProps) => {
-  const { profile } = useProfile();
-  const {
-    formData,
-    showPassword,
-    setShowPassword,
-    generatedCredentials,
-    departments,
-    generatePassword,
-    addEmployeeMutation,
-    handleSubmit,
-    handleChange,
-    resetForm
-  } = useAddEmployee(onSuccess);
+  const { addEmployee, isLoading } = useAddEmployee();
 
-  const handleClose = () => {
-    resetForm();
-    onClose();
+  const handleSubmit = async (data: any) => {
+    try {
+      await addEmployee(data);
+      onSuccess();
+      onClose();
+    } catch (error) {
+      // Error is already handled by the hook with toast messages
+      console.error('Error adding employee:', error);
+    }
   };
-
-  if (generatedCredentials) {
-    return (
-      <EmployeeCreatedSuccess
-        credentials={generatedCredentials}
-        onClose={handleClose}
-      />
-    );
-  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5" />
-            Add New Employee
-          </CardTitle>
-          <Button variant="ghost" size="icon" onClick={handleClose}>
-            <X className="w-4 h-4" />
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <AddEmployeeForm
-            formData={formData}
-            showPassword={showPassword}
-            departments={departments}
-            isLoading={addEmployeeMutation.isPending}
-            onSubmit={handleSubmit}
-            onChange={handleChange}
-            onTogglePassword={() => setShowPassword(!showPassword)}
-            onGeneratePassword={generatePassword}
-            onCancel={handleClose}
-          />
-        </CardContent>
-      </Card>
+      <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5" />
+              Add New Employee
+            </CardTitle>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="w-4 h-4" />
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <AddEmployeeForm
+              onSubmit={handleSubmit}
+              isLoading={isLoading}
+              onCancel={onClose}
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
