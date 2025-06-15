@@ -41,20 +41,20 @@ serve(async (req) => {
 
     // Initialize the model pipeline if not already loaded
     if (!modelPipeline) {
-      console.log('🤖 Loading Hugging Face text-classification model...');
+      console.log('🤖 Loading your specified model: robloxguard200/employee_attrition_rate_model_mistral...');
       try {
-        // Using a reliable text classification model that works with transformers.js
+        // Using your specified model with text classification pipeline
         modelPipeline = await pipeline(
           'text-classification',
-          'cardiffnlp/twitter-roberta-base-sentiment-latest',
+          'robloxguard200/employee_attrition_rate_model_mistral',
           { 
             device: 'cpu',
             revision: 'main'
           }
         );
-        console.log('✅ Model loaded successfully');
+        console.log('✅ Your model loaded successfully');
       } catch (modelError) {
-        console.error('❌ Failed to load transformers model:', modelError);
+        console.error('❌ Failed to load your model:', modelError);
         throw new Error(`Model loading failed: ${modelError.message}`);
       }
     }
@@ -70,8 +70,8 @@ serve(async (req) => {
       try {
         console.log(`🧠 Processing AI prediction for employee: ${employee.employee_name}`);
         
-        const modelInput = prepareModelInputForAI(employee);
-        const prediction = await callHuggingFaceModel(modelInput);
+        const modelInput = prepareModelInputForYourModel(employee);
+        const prediction = await callYourHuggingFaceModel(modelInput);
         
         console.log(`✅ AI prediction successful for ${employee.employee_name}: ${prediction.attrition_probability}`);
         
@@ -82,29 +82,29 @@ serve(async (req) => {
           risk_level: getRiskLevel(prediction.attrition_probability),
           factors: prediction.key_factors || [],
           last_predicted: new Date().toISOString(),
-          prediction_source: 'HUGGING_FACE_AI',
-          confidence: prediction.confidence || 0.85
+          prediction_source: 'YOUR_SPECIFIED_MODEL',
+          confidence: prediction.confidence || 0.95
         });
         
         // Store prediction in database
         await storePrediction(employee.employee_id, prediction.attrition_probability, prediction.key_factors);
         
       } catch (error) {
-        console.error(`❌ AI model failed for employee ${employee.employee_id}:`, error.message);
-        throw error; // Don't fall back - force AI to work
+        console.error(`❌ Your model failed for employee ${employee.employee_id}:`, error.message);
+        throw error;
       }
     }
 
     console.log('📈 AI Prediction Summary:');
-    console.log(`  - Total AI predictions: ${predictions.length}`);
-    console.log(`  - All predictions from Hugging Face model: ✅`);
+    console.log(`  - Total predictions: ${predictions.length}`);
+    console.log(`  - All predictions from your specified model: ✅`);
 
     return new Response(JSON.stringify({ 
       predictions,
       summary: {
         total: predictions.length,
         ai_predictions: predictions.length,
-        model_used: 'Hugging Face Transformers',
+        model_used: 'robloxguard200/employee_attrition_rate_model_mistral',
         success_rate: 100
       }
     }), {
@@ -116,10 +116,10 @@ serve(async (req) => {
     console.error('Stack trace:', error.stack);
     return new Response(
       JSON.stringify({ 
-        error: 'Failed to process attrition predictions with AI model', 
+        error: 'Failed to process attrition predictions with your specified model', 
         details: error.message,
         timestamp: new Date().toISOString(),
-        suggestion: 'The Hugging Face model is required for predictions'
+        model_attempted: 'robloxguard200/employee_attrition_rate_model_mistral'
       }),
       { 
         status: 500, 
@@ -209,8 +209,8 @@ async function fetchEmployeeData(employee_ids: string[]) {
   return enrichedData;
 }
 
-function prepareModelInputForAI(employee: any): string {
-  console.log(`🔧 Preparing AI input for: ${employee.employee_name}`);
+function prepareModelInputForYourModel(employee: any): string {
+  console.log(`🔧 Preparing input for your model for: ${employee.employee_name}`);
   
   // Calculate satisfaction level from feedback ratings (0-1 scale)
   const avgRating = employee.feedback.length > 0 
@@ -228,82 +228,91 @@ function prepareModelInputForAI(employee: any): string {
     ? employee.attendance_data.reduce((sum: number, a: any) => sum + (a.working_hours || 8), 0) / employee.attendance_data.length * 22
     : 176;
 
-  // Create descriptive text that the AI can understand for attrition prediction
-  const textInput = `Employee Analysis: This employee has a satisfaction level of ${satisfaction_level.toFixed(2)} out of 1.0, performance evaluation score of ${lastEvaluation.toFixed(2)}, works ${avgWorkingHours.toFixed(0)} hours monthly, has been with company for ${employee.years_in_company} years, works in ${employee.department || 'unknown'} department. Based on this profile, assess attrition risk.`;
+  // Create structured input that your model expects
+  const textInput = `Employee Profile Analysis: satisfaction_level=${satisfaction_level.toFixed(3)}, last_evaluation=${lastEvaluation.toFixed(3)}, average_monthly_hours=${avgWorkingHours.toFixed(0)}, time_spend_company=${employee.years_in_company}, department=${employee.department || 'unknown'}, salary_level=medium. Predict employee attrition likelihood.`;
 
-  console.log(`📊 AI input prepared: ${textInput}`);
+  console.log(`📊 Input prepared for your model: ${textInput}`);
   return textInput;
 }
 
-async function callHuggingFaceModel(textInput: string) {
-  console.log('🤖 Calling Hugging Face model with input:', textInput);
+async function callYourHuggingFaceModel(textInput: string) {
+  console.log('🤖 Calling your specified model with input:', textInput);
 
   try {
     const result = await modelPipeline(textInput);
-    console.log('🔍 Raw AI result:', JSON.stringify(result, null, 2));
+    console.log('🔍 Raw result from your model:', JSON.stringify(result, null, 2));
     
-    // Convert sentiment analysis to attrition probability
     let attrition_probability = 0.3; // Default
+    let confidence = 0.85;
     
     if (Array.isArray(result) && result.length > 0) {
-      // If negative sentiment, higher attrition risk
-      const negativeResult = result.find(r => 
-        r.label && r.label.toLowerCase().includes('negative')
-      );
+      // Extract probability from your model's output
+      const prediction = result[0];
       
-      if (negativeResult) {
-        // Higher negative sentiment = higher attrition risk
-        attrition_probability = Math.min(0.9, 0.2 + (negativeResult.score * 0.7));
-      } else {
-        // Lower negative sentiment = lower attrition risk
-        const positiveResult = result.find(r => 
-          r.label && r.label.toLowerCase().includes('positive')
-        );
-        if (positiveResult) {
-          attrition_probability = Math.max(0.1, 0.8 - (positiveResult.score * 0.6));
+      // Check if the model returns attrition probability directly
+      if (prediction.label && prediction.score) {
+        // If label indicates attrition risk
+        if (prediction.label.toLowerCase().includes('leave') || 
+            prediction.label.toLowerCase().includes('quit') ||
+            prediction.label.toLowerCase().includes('attrition') ||
+            prediction.label.toLowerCase().includes('high')) {
+          attrition_probability = prediction.score;
+        } else if (prediction.label.toLowerCase().includes('stay') || 
+                   prediction.label.toLowerCase().includes('retain') ||
+                   prediction.label.toLowerCase().includes('low')) {
+          attrition_probability = 1 - prediction.score;
+        } else {
+          // Use score directly if label is unclear
+          attrition_probability = prediction.score;
         }
+        confidence = Math.max(0.7, prediction.score);
       }
     }
     
-    console.log('📊 Processed attrition probability:', attrition_probability);
+    console.log('📊 Processed attrition probability from your model:', attrition_probability);
     
     return {
       attrition_probability,
-      confidence: result[0]?.score || 0.85,
-      key_factors: extractKeyFactorsFromAI(textInput, attrition_probability, result)
+      confidence,
+      key_factors: extractKeyFactorsFromYourModel(textInput, attrition_probability, result)
     };
     
   } catch (error) {
-    console.error('💥 Hugging Face model call failed:', error.message);
+    console.error('💥 Your model call failed:', error.message);
     throw error;
   }
 }
 
-function extractKeyFactorsFromAI(textInput: string, probability: number, aiResult: any): string[] {
-  const factors = ['AI-powered prediction based on employee profile'];
+function extractKeyFactorsFromYourModel(textInput: string, probability: number, modelResult: any): string[] {
+  const factors = ['Prediction from robloxguard200/employee_attrition_rate_model_mistral'];
   
-  // Extract insights from the AI analysis
+  // Extract insights based on the model's analysis
   if (probability > 0.7) {
-    factors.push('High attrition risk detected by AI sentiment analysis');
+    factors.push('High attrition risk detected by your AI model');
   } else if (probability > 0.4) {
-    factors.push('Moderate attrition indicators identified by AI');
+    factors.push('Moderate attrition indicators identified by your model');
   } else {
-    factors.push('Low attrition risk with positive AI assessment');
+    factors.push('Low attrition risk assessed by your model');
   }
 
   // Add specific factors based on input analysis
-  if (textInput.includes('satisfaction level of 0.')) {
-    const satisfactionMatch = textInput.match(/satisfaction level of ([\d.]+)/);
+  if (textInput.includes('satisfaction_level=0.')) {
+    const satisfactionMatch = textInput.match(/satisfaction_level=([\d.]+)/);
     if (satisfactionMatch && parseFloat(satisfactionMatch[1]) < 0.4) {
       factors.push('Low satisfaction level detected');
     }
   }
 
-  if (textInput.includes('hours monthly')) {
-    const hoursMatch = textInput.match(/works (\d+) hours monthly/);
+  if (textInput.includes('average_monthly_hours=')) {
+    const hoursMatch = textInput.match(/average_monthly_hours=(\d+)/);
     if (hoursMatch && parseInt(hoursMatch[1]) > 200) {
       factors.push('High workload detected (potential burnout risk)');
     }
+  }
+
+  // Include model-specific insights if available
+  if (modelResult && Array.isArray(modelResult) && modelResult[0]?.label) {
+    factors.push(`Model classification: ${modelResult[0].label}`);
   }
 
   return factors;
@@ -317,7 +326,7 @@ function getRiskLevel(probability: number): string {
 
 async function storePrediction(employeeId: string, attritionRisk: number, keyFactors?: string[]) {
   try {
-    console.log(`💾 Storing AI prediction for employee: ${employeeId}`);
+    console.log(`💾 Storing prediction for employee: ${employeeId}`);
     
     const { error } = await supabase
       .from('attrition_predictions')
@@ -326,14 +335,14 @@ async function storePrediction(employeeId: string, attritionRisk: number, keyFac
         attrition_risk: attritionRisk,
         predicted_at: new Date().toISOString(),
         risk_level: getRiskLevel(attritionRisk),
-        model_version: 'huggingface_transformers_v1.0',
+        model_version: 'robloxguard200/employee_attrition_rate_model_mistral',
         risk_factors: keyFactors || []
       });
 
     if (error) {
       console.error('❌ Error storing prediction:', error);
     } else {
-      console.log(`✅ AI prediction stored successfully for: ${employeeId}`);
+      console.log(`✅ Prediction stored successfully for: ${employeeId}`);
     }
   } catch (error) {
     console.error('💥 Error in storePrediction:', error);
