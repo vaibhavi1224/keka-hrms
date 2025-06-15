@@ -23,7 +23,7 @@ interface FirstTimeLoginModalProps {
 const FirstTimeLoginModal = ({ open, onComplete }: FirstTimeLoginModalProps) => {
   const { profile, refetch } = useProfile();
   const [step, setStep] = useState(1);
-  const [profilePicture, setProfilePicture] = useState(profile?.profile_picture || '');
+  const [profilePicture, setProfilePicture] = useState((profile as any)?.profile_picture || '');
   const [uploading, setUploading] = useState(false);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [resumeUploaded, setResumeUploaded] = useState(false);
@@ -179,8 +179,8 @@ const FirstTimeLoginModal = ({ open, onComplete }: FirstTimeLoginModalProps) => 
   };
 
   const getInitials = () => {
-    const firstName = profile?.first_name || '';
-    const lastName = profile?.last_name || '';
+    const firstName = (profile as any)?.first_name || '';
+    const lastName = (profile as any)?.last_name || '';
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 

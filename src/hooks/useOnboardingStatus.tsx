@@ -9,8 +9,8 @@ export const useOnboardingStatus = () => {
   useEffect(() => {
     if (!loading && profile) {
       // Check if user needs onboarding (first-time login)
-      const hasCompletedOnboarding = profile.onboarding_status === 'completed';
-      const hasProfilePicture = profile.profile_picture;
+      const hasCompletedOnboarding = (profile as any).onboarding_status === 'completed';
+      const hasProfilePicture = (profile as any).profile_picture;
       
       // User needs onboarding if they haven't completed it or don't have a profile picture
       setNeedsOnboarding(!hasCompletedOnboarding && !hasProfilePicture);

@@ -9,6 +9,45 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, User, Briefcase, GraduationCap, Code, CheckCircle } from 'lucide-react';
 
+interface ResumeData {
+  id: string;
+  employee_id: string;
+  extracted_data: {
+    personal_info?: {
+      first_name?: string;
+      last_name?: string;
+      phone?: string;
+      address?: string;
+      email?: string;
+    };
+    education?: Array<{
+      degree: string;
+      institution: string;
+      year: string;
+      field_of_study: string;
+    }>;
+    work_experience?: Array<{
+      company: string;
+      position: string;
+      duration: string;
+      description: string;
+    }>;
+    skills?: string[];
+    projects?: Array<{
+      name: string;
+      description: string;
+      technologies: string[];
+    }>;
+  };
+  processed_at: string;
+  status: string;
+  profiles?: {
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+}
+
 const ResumeDataViewer = () => {
   const queryClient = useQueryClient();
 
@@ -16,23 +55,25 @@ const ResumeDataViewer = () => {
     queryKey: ['resume-data'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('resume_data')
+        .from('resume_data' as any)
         .select(`
           *,
-          profiles(first_name, last_name, email)
+          profiles!inner(first_name, last_name, email)
         `)
         .order('processed_at', { ascending: false });
 
-      if (error) throw error;
-      return data || [];
+      if (error) {
+        console.error('Error fetching resume data:', error);
+        throw error;
+      }
+      return (data || []) as ResumeData[];
     }
   });
 
   const updateProfileMutation = useMutation({
     mutationFn: async ({ employeeId, resumeId }: { employeeId: string, resumeId: string }) => {
-      // Mark as reviewed
       const { error } = await supabase
-        .from('resume_data')
+        .from('resume_data' as any)
         .update({ status: 'reviewed' })
         .eq('id', resumeId);
 
@@ -137,7 +178,7 @@ const ResumeDataViewer = () => {
                   
                   <TabsContent value="education" className="mt-4">
                     <div className="space-y-4">
-                      {resume.extracted_data?.education?.map((edu: any, index: number) => (
+                      {resume.extracted_data?.education?.map((edu, index) => (
                         <div key={index} className="border rounded-lg p-4">
                           <div className="flex items-center space-x-2 mb-2">
                             <GraduationCap className="w-5 h-5 text-blue-600" />
@@ -152,7 +193,7 @@ const ResumeDataViewer = () => {
                   
                   <TabsContent value="experience" className="mt-4">
                     <div className="space-y-4">
-                      {resume.extracted_data?.work_experience?.map((exp: any, index: number) => (
+                      {resume.extracted_data?.work_experience?.map((exp, index) => (
                         <div key={index} className="border rounded-lg p-4">
                           <div className="flex items-center space-x-2 mb-2">
                             <Briefcase className="w-5 h-5 text-blue-600" />
@@ -173,7 +214,7 @@ const ResumeDataViewer = () => {
                           Skills
                         </h4>
                         <div className="flex flex-wrap gap-2">
-                          {resume.extracted_data?.skills?.map((skill: string, index: number) => (
+                          {resume.extracted_data?.skills?.map((skill, index) => (
                             <Badge key={index} variant="outline">{skill}</Badge>
                           )) || <p className="text-gray-600">No skills extracted</p>}
                         </div>
@@ -182,13 +223,13 @@ const ResumeDataViewer = () => {
                       <div>
                         <h4 className="font-medium mb-3">Projects</h4>
                         <div className="space-y-3">
-                          {resume.extracted_data?.projects?.map((project: any, index: number) => (
+                          {resume.extracted_data?.projects?.map((project, index) => (
                             <div key={index} className="border rounded-lg p-3">
                               <h5 className="font-medium">{project.name}</h5>
                               <p className="text-sm text-gray-600 mt-1">{project.description}</p>
                               {project.technologies && (
                                 <div className="flex flex-wrap gap-1 mt-2">
-                                  {project.technologies.map((tech: string, techIndex: number) => (
+                                  {project.technologies.map((tech, techIndex) => (
                                     <Badge key={techIndex} variant="secondary" className="text-xs">{tech}</Badge>
                                   ))}
                                 </div>

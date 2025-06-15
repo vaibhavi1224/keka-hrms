@@ -1431,6 +1431,44 @@ export type Database = {
           },
         ]
       }
+      resume_data: {
+        Row: {
+          created_at: string
+          employee_id: string
+          extracted_data: Json
+          id: string
+          processed_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          employee_id: string
+          extracted_data: Json
+          id?: string
+          processed_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          employee_id?: string
+          extracted_data?: Json
+          id?: string
+          processed_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resume_data_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       review_cycles: {
         Row: {
           created_at: string
