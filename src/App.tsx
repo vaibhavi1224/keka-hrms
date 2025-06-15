@@ -12,6 +12,7 @@ import EmployeeManagement from "./pages/EmployeeManagement";
 import Attendance from "./pages/Attendance";
 import Leave from "./pages/Leave";
 import Payroll from "./pages/Payroll";
+import Performance from "./pages/Performance";
 import Analytics from "./pages/Analytics";
 import HRChat from "./pages/HRChat";
 import NotFound from "./pages/NotFound";
@@ -64,6 +65,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Payroll />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/performance"
+              element={
+                <ProtectedRoute>
+                  <Performance />
                 </ProtectedRoute>
               }
             />
