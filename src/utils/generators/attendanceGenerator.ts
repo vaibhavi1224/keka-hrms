@@ -33,15 +33,15 @@ export function generateAttendanceRecords(employeeId: string, startDate: Date, e
           biometric_verified_out: Math.random() > 0.1
         });
       } else {
-        // Absent or late - use NULL for timestamps instead of empty strings
+        // Absent or late - use null for timestamps
         const statusOptions: ('absent' | 'late')[] = ['absent', 'late'];
         const status = statusOptions[Math.floor(Math.random() * statusOptions.length)];
         
         attendance.push({
           user_id: employeeId,
           date: currentDate.toISOString().split('T')[0],
-          check_in_time: null as any, // Will be handled as NULL in database
-          check_out_time: null as any, // Will be handled as NULL in database
+          check_in_time: null,
+          check_out_time: null,
           status: status,
           working_hours: 0,
           biometric_verified: false,

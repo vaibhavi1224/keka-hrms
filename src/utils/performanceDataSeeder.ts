@@ -42,6 +42,18 @@ export async function seedPerformanceData(): Promise<SeedResult> {
       const feedback = generatePerformanceFeedback(employee.id, startDate, endDate);
       const attendance = generateAttendanceRecords(employee.id, startDate, endDate);
 
+      // Check for existing data to avoid duplicates
+      const { data: existingAttendance } = await supabase
+        .from('attendance')
+        .select('date')
+        .eq('user_id', employee.id)
+        .gte('date', startDate.toISOString().split('T')[0])
+        .lte('date', endDate.toISOString().split('T')[0]);
+
+      // Filter out dates that already exist
+      const existingDates = new Set(existingAttendance?.map(a => a.date) || []);
+      const newAttendance = attendance.filter(a => !existingDates.has(a.date));
+
       // Insert metrics
       if (metrics.length > 0) {
         const { error: metricsError } = await supabase
@@ -51,10 +63,11 @@ export async function seedPerformanceData(): Promise<SeedResult> {
         if (metricsError) {
           console.error(`Error inserting metrics for ${employee.email}:`, metricsError);
           errorCount++;
+          continue; // Skip to next employee
         }
       }
 
-      // Insert feedback
+      // Insert feedback (only self-reviews to satisfy RLS)
       if (feedback.length > 0) {
         const { error: feedbackError } = await supabase
           .from('performance_feedback')
@@ -63,18 +76,20 @@ export async function seedPerformanceData(): Promise<SeedResult> {
         if (feedbackError) {
           console.error(`Error inserting feedback for ${employee.email}:`, feedbackError);
           errorCount++;
+          continue; // Skip to next employee
         }
       }
 
-      // Insert attendance records
-      if (attendance.length > 0) {
+      // Insert attendance records (only new ones)
+      if (newAttendance.length > 0) {
         const { error: attendanceError } = await supabase
           .from('attendance')
-          .insert(attendance);
+          .insert(newAttendance);
         
         if (attendanceError) {
           console.error(`Error inserting attendance for ${employee.email}:`, attendanceError);
           errorCount++;
+          continue; // Skip to next employee
         }
       }
 
