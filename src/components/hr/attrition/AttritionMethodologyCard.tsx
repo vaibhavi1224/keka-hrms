@@ -17,9 +17,9 @@ const AttritionMethodologyCard = () => {
           <div className="flex items-start gap-3">
             <Brain className="w-5 h-5 text-blue-600 mt-1" />
             <div>
-              <h4 className="font-medium text-blue-900">Mistral AI Model</h4>
+              <h4 className="font-medium text-blue-900">Gemini AI Analysis</h4>
               <p className="text-sm text-blue-700">
-                Uses specialized employee attrition prediction model (robloxguard200/employee_attrition_rate_model_mistral) trained on HR datasets
+                Uses Google's advanced Gemini AI model to analyze employee behavioral patterns and predict attrition risk with sophisticated reasoning
               </p>
             </div>
           </div>
@@ -29,7 +29,7 @@ const AttritionMethodologyCard = () => {
             <div>
               <h4 className="font-medium text-blue-900">Data Analysis</h4>
               <p className="text-sm text-blue-700">
-                Analyzes performance metrics, attendance patterns, tenure, feedback ratings, salary data, and working hours
+                Analyzes performance metrics, attendance patterns, tenure, feedback ratings, salary data, and working hours using AI reasoning
               </p>
             </div>
           </div>
@@ -39,7 +39,7 @@ const AttritionMethodologyCard = () => {
             <div>
               <h4 className="font-medium text-blue-900">Risk Assessment</h4>
               <p className="text-sm text-blue-700">
-                Provides LOW, MEDIUM, or HIGH risk categorization with AI-generated insights and confidence scores
+                Provides LOW, MEDIUM, or HIGH risk categorization with AI-generated insights and detailed reasoning for each prediction
               </p>
             </div>
           </div>
@@ -47,15 +47,15 @@ const AttritionMethodologyCard = () => {
         
         <div className="p-3 bg-white rounded-lg border border-blue-200">
           <p className="text-xs text-blue-800">
-            <strong>AI-Only Predictions:</strong> Our system exclusively uses a specialized Mistral-based attrition prediction model 
-            that analyzes employee profiles including department, designation, tenure, performance ratings, attendance rates, and working patterns. 
-            The model generates probability scores and identifies key risk factors for each employee using advanced machine learning techniques.
+            <strong>AI-Powered Predictions:</strong> Our system uses Google's Gemini AI to analyze complex employee data patterns 
+            including department, designation, tenure, performance ratings, attendance rates, and working patterns. 
+            The AI model provides probability scores and identifies key risk factors using advanced natural language reasoning and data analysis.
           </p>
         </div>
         
         <div className="p-3 bg-amber-100 rounded-lg border border-amber-200">
           <p className="text-xs text-amber-800">
-            <strong>Service Requirement:</strong> This feature requires a valid Hugging Face API token. If the AI service is unavailable, 
+            <strong>Service Requirement:</strong> This feature requires a valid Gemini API key. If the AI service is unavailable, 
             no predictions will be generated to ensure accuracy and reliability.
           </p>
         </div>

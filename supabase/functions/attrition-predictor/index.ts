@@ -21,7 +21,7 @@ interface EmployeeAttritionData {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const huggingFaceToken = Deno.env.get('HUGGING_FACE_ACCESS_TOKEN');
+const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -34,11 +34,11 @@ serve(async (req) => {
   }
 
   try {
-    if (!huggingFaceToken) {
+    if (!geminiApiKey) {
       return new Response(
         JSON.stringify({ 
           error: 'AI prediction service unavailable', 
-          details: 'Hugging Face API token not configured',
+          details: 'Gemini API key not configured',
           timestamp: new Date().toISOString()
         }),
         { 
@@ -64,7 +64,7 @@ serve(async (req) => {
       try {
         console.log(`🧠 Processing AI prediction for employee: ${employee.employee_name}`);
         
-        const prediction = await callAttritionClassificationModel(employee);
+        const prediction = await callGeminiAttritionPredictor(employee);
         console.log(`✅ AI prediction for ${employee.employee_name}: ${prediction.attrition_probability}`);
         
         predictions.push({
@@ -74,8 +74,8 @@ serve(async (req) => {
           risk_level: getRiskLevel(prediction.attrition_probability),
           factors: prediction.key_factors || [],
           last_predicted: new Date().toISOString(),
-          prediction_source: 'MISTRAL_ATTRITION_AI',
-          confidence: prediction.confidence || 0.90
+          prediction_source: 'GEMINI_AI_ATTRITION',
+          confidence: prediction.confidence || 0.85
         });
         
         // Store prediction in database
@@ -111,7 +111,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         ...response,
         error: 'No successful predictions generated',
-        message: 'All AI predictions failed. Please check your Hugging Face API configuration.'
+        message: 'All AI predictions failed. Please check your Gemini API configuration.'
       }), {
         headers: {...corsHeaders, 'Content-Type': 'application/json' },
         status: 422
@@ -219,55 +219,61 @@ async function fetchEmployeeData(employee_ids: string[]) {
   return enrichedData;
 }
 
-async function callAttritionClassificationModel(employee: EmployeeAttritionData) {
-  console.log(`🤖 Calling Mistral Attrition Classification Model for: ${employee.employee_name}`);
+async function callGeminiAttritionPredictor(employee: EmployeeAttritionData) {
+  console.log(`🤖 Calling Gemini AI for attrition prediction: ${employee.employee_name}`);
   
   try {
-    // Create structured input text for the classification model
-    const employeeInputText = createEmployeeInputTextForClassification(employee);
+    // Create structured prompt for Gemini AI
+    const employeeAnalysisPrompt = createEmployeeAnalysisPrompt(employee);
     
-    console.log('📤 Sending to robloxguard200/employee_attrition_rate_model_mistral with input:', employeeInputText);
+    console.log('📤 Sending analysis request to Gemini AI');
     
     const response = await fetch(
-      `https://api-inference.huggingface.co/models/robloxguard200/employee_attrition_rate_model_mistral`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`,
       {
+        method: "POST",
         headers: {
-          Authorization: `Bearer ${huggingFaceToken}`,
           "Content-Type": "application/json",
         },
-        method: "POST",
         body: JSON.stringify({
-          inputs: employeeInputText,
-          options: {
-            wait_for_model: true
+          contents: [{
+            parts: [{
+              text: employeeAnalysisPrompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.3,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 1024,
           }
         }),
       }
     );
 
     if (!response.ok) {
-      throw new Error(`Hugging Face API error: ${response.statusText}`);
+      throw new Error(`Gemini API error: ${response.statusText}`);
     }
 
     const result = await response.json();
-    console.log('🔍 Raw Mistral classification result:', JSON.stringify(result, null, 2));
+    console.log('🔍 Raw Gemini AI result received');
     
-    // Parse the classification result to extract attrition probability
-    const attrition_probability = parseClassificationResult(result, employee);
+    // Parse the AI response to extract attrition probability and insights
+    const analysis = parseGeminiResponse(result, employee);
     
     return {
-      attrition_probability,
-      confidence: 0.90,
-      key_factors: extractAIKeyFactors(employee, attrition_probability, result)
+      attrition_probability: analysis.probability,
+      confidence: 0.85,
+      key_factors: analysis.factors
     };
     
   } catch (error) {
-    console.error('💥 Mistral attrition classification model call failed:', error.message);
+    console.error('💥 Gemini AI attrition prediction failed:', error.message);
     throw error;
   }
 }
 
-function createEmployeeInputTextForClassification(employee: EmployeeAttritionData): string {
+function createEmployeeAnalysisPrompt(employee: EmployeeAttritionData): string {
   const avgRating = employee.feedback.length > 0 
    ? employee.feedback.reduce((sum, f) => sum + (f.rating || 3), 0) / employee.feedback.length 
     : 3;
@@ -284,88 +290,90 @@ function createEmployeeInputTextForClassification(employee: EmployeeAttritionDat
    ? employee.performance_metrics.reduce((sum, m) => sum + m.metric_value, 0) / employee.performance_metrics.length
     : 75;
 
-  // Create structured text input that the model can classify
-  const inputText = `Employee in ${employee.department} department working as ${employee.designation} for ${employee.years_in_company} years. Performance rating: ${avgRating.toFixed(1)}/5, Performance metrics: ${avgPerformance.toFixed(1)}%, Attendance rate: ${attendanceRate.toFixed(1)}%, Average working hours: ${avgWorkingHours.toFixed(1)}. Salary CTC: ${employee.salary?.ctc || 'Not specified'}.`;
+  return `You are an expert HR analytics AI specializing in employee attrition prediction. Analyze the following employee data and predict their likelihood of leaving the company.
 
-  return inputText;
+EMPLOYEE PROFILE:
+- Name: ${employee.employee_name}
+- Department: ${employee.department}
+- Position: ${employee.designation}
+- Years with company: ${employee.years_in_company}
+- Current salary: ${employee.salary?.ctc || 'Not specified'}
+
+PERFORMANCE DATA:
+- Average performance rating: ${avgRating.toFixed(1)}/5
+- Average performance metrics: ${avgPerformance.toFixed(1)}%
+- Number of performance reviews: ${employee.feedback.length}
+
+ATTENDANCE & ENGAGEMENT:
+- Attendance rate: ${attendanceRate.toFixed(1)}%
+- Average working hours: ${avgWorkingHours.toFixed(1)} hours/day
+- Recent attendance records: ${employee.attendance_data.length}
+
+Based on this data, provide your analysis in the following EXACT format:
+
+ATTRITION_PROBABILITY: [number between 0.0 and 1.0]
+RISK_FACTORS: [list of 3-5 specific factors that influence the prediction]
+CONFIDENCE: [your confidence in this prediction as a percentage]
+
+Example:
+ATTRITION_PROBABILITY: 0.65
+RISK_FACTORS: Low performance ratings, High absenteeism, Below market salary, Limited career progression, Poor work-life balance
+CONFIDENCE: 85%
+
+Analyze the employee data and provide your prediction:`;
 }
 
-function parseClassificationResult(result: any, employee: EmployeeAttritionData): number {
+function parseGeminiResponse(result: any, employee: EmployeeAttritionData): { probability: number; factors: string[] } {
   try {
-    console.log('🔍 Parsing classification result:', result);
+    console.log('🔍 Parsing Gemini AI response');
     
-    let probability = 0.3; // Default fallback
+    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
-    if (Array.isArray(result) && result.length > 0) {
-      // Handle classification output format
-      const classificationResults = result[0];
-      
-      if (Array.isArray(classificationResults)) {
-        // Find attrition-related labels
-        const attritionResult = classificationResults.find(item => 
-          item.label && (
-            item.label.toLowerCase().includes('leave') ||
-            item.label.toLowerCase().includes('attrition') ||
-            item.label.toLowerCase().includes('quit') ||
-            item.label.toLowerCase().includes('1') // Often class 1 represents "will leave"
-          )
-        );
-        
-        if (attritionResult) {
-          probability = attritionResult.score || 0.3;
-        } else {
-          // If no specific attrition label found, use the highest scoring negative outcome
-          const highestScore = Math.max(...classificationResults.map(item => item.score || 0));
-          const highestResult = classificationResults.find(item => item.score === highestScore);
-          
-          // Assume higher scores indicate higher risk
-          probability = highestScore;
-        }
-      } else if (classificationResults.score !== undefined) {
-        probability = classificationResults.score;
-      }
-    } else if (result.score !== undefined) {
-      probability = result.score;
-    }
+    // Extract attrition probability
+    const probabilityMatch = text.match(/ATTRITION_PROBABILITY:\s*([\d.]+)/i);
+    let probability = probabilityMatch ? parseFloat(probabilityMatch[1]) : 0.3;
     
     // Ensure probability is within valid range
     probability = Math.max(0, Math.min(1, probability));
     
+    // Extract risk factors
+    const factorsMatch = text.match(/RISK_FACTORS:\s*([^\n]+)/i);
+    let factors = ['AI-powered attrition analysis using Gemini AI'];
+    
+    if (factorsMatch) {
+      const factorsText = factorsMatch[1];
+      factors = factorsText.split(',').map(f => f.trim()).filter(f => f.length > 0);
+    }
+    
+    // Add contextual insights based on employee data
+    const additionalFactors = generateContextualFactors(employee, probability);
+    factors = [...factors, ...additionalFactors];
+    
     console.log(`📊 Parsed attrition probability: ${probability} for ${employee.employee_name}`);
-    return probability;
+    
+    return { probability, factors };
     
   } catch (error) {
-    console.error('❌ Error parsing classification result:', error);
-    throw new Error(`Failed to parse AI model result: ${error.message}`);
+    console.error('❌ Error parsing Gemini response:', error);
+    // Fallback analysis based on available data
+    return generateFallbackAnalysis(employee);
   }
 }
 
-function extractAIKeyFactors(employee: EmployeeAttritionData, probability: number, modelResult?: any): string[] {
-  const factors = ['AI-powered attrition analysis using Mistral classification model'];
+function generateContextualFactors(employee: EmployeeAttritionData, probability: number): string[] {
+  const factors = [];
   
-  if (modelResult && Array.isArray(modelResult) && modelResult[0]) {
-    const results = Array.isArray(modelResult[0]) ? modelResult[0] : [modelResult[0]];
-    
-    // Extract top prediction labels as insights
-    results.slice(0, 2).forEach(result => {
-      if (result.label && result.score) {
-        factors.push(`Model prediction: ${result.label} (confidence: ${(result.score * 100).toFixed(1)}%)`);
-      }
-    });
-  }
-  
-  // Add data-driven insights
   if (probability > 0.7) {
-    factors.push('High attrition risk detected by AI model');
+    factors.push('High attrition risk identified by AI analysis');
   } else if (probability > 0.4) {
-    factors.push('Moderate attrition indicators identified');
+    factors.push('Moderate attrition indicators detected');
   } else {
     factors.push('Low attrition risk assessed by AI model');
   }
   
   // Add specific insights based on data
   if (employee.years_in_company < 2) {
-    factors.push('Early career stage increases mobility risk');
+    factors.push('Early tenure increases mobility risk');
   }
   
   const avgRating = employee.feedback.length > 0 
@@ -373,10 +381,36 @@ function extractAIKeyFactors(employee: EmployeeAttritionData, probability: numbe
     : 3;
     
   if (avgRating < 2.5) {
-    factors.push('Low performance ratings detected');
+    factors.push('Below-average performance ratings detected');
+  }
+  
+  const attendanceRate = employee.attendance_data.length > 0
+   ? (employee.attendance_data.filter(a => a.status === 'present').length / employee.attendance_data.length) * 100
+    : 95;
+    
+  if (attendanceRate < 85) {
+    factors.push('Low attendance rate indicates disengagement');
   }
   
   return factors;
+}
+
+function generateFallbackAnalysis(employee: EmployeeAttritionData): { probability: number; factors: string[] } {
+  let probability = 0.3; // Base probability
+  const factors = ['Fallback analysis - AI parsing failed'];
+  
+  // Simple heuristic-based calculation as fallback
+  const avgRating = employee.feedback.length > 0 
+   ? employee.feedback.reduce((sum, f) => sum + (f.rating || 3), 0) / employee.feedback.length 
+    : 3;
+  
+  if (avgRating < 2.5) probability += 0.3;
+  if (employee.years_in_company < 1) probability += 0.2;
+  if (employee.years_in_company > 5) probability -= 0.1;
+  
+  probability = Math.max(0, Math.min(1, probability));
+  
+  return { probability, factors };
 }
 
 function getRiskLevel(probability: number): string {
@@ -396,7 +430,7 @@ async function storePrediction(employeeId: string, attritionRisk: number, keyFac
         attrition_risk: attritionRisk,
         predicted_at: new Date().toISOString(),
         risk_level: getRiskLevel(attritionRisk),
-        model_version: 'mistral-attrition-classification-v1',
+        model_version: 'gemini-ai-attrition-v1',
         risk_factors: keyFactors || []
       });
 

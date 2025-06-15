@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -158,12 +157,12 @@ const AttritionPredictor = () => {
       if (count > 0) {
         toast({
           title: "AI Analysis Complete! 🤖",
-          description: `Generated ${count} AI predictions${failed > 0 ? `, ${failed} failed` : ''}`,
+          description: `Generated ${count} AI predictions using Gemini AI${failed > 0 ? `, ${failed} failed` : ''}`,
         });
       } else {
         toast({
           title: "AI Analysis Failed",
-          description: `No predictions generated. ${failed > 0 ? `${failed} attempts failed.` : 'Please check AI service configuration.'}`,
+          description: `No predictions generated. ${failed > 0 ? `${failed} attempts failed.` : 'Please check Gemini AI service configuration.'}`,
           variant: "destructive",
         });
       }
@@ -173,7 +172,7 @@ const AttritionPredictor = () => {
       console.error('Prediction error:', error);
       toast({
         title: "AI Prediction Failed",
-        description: "The AI service is currently unavailable. Please ensure your Hugging Face API token is configured.",
+        description: "The Gemini AI service is currently unavailable. Please ensure your Gemini API key is configured.",
         variant: "destructive",
       });
     }
@@ -241,7 +240,7 @@ const AttritionPredictor = () => {
             <Brain className="w-6 h-6 text-purple-600" />
             AI Attrition Predictor
           </h2>
-          <p className="text-gray-600 mt-1">Predict which employees are likely to leave using advanced AI analysis</p>
+          <p className="text-gray-600 mt-1">Predict which employees are likely to leave using advanced Gemini AI analysis</p>
         </div>
         <div className="flex gap-2">
           <Button 
