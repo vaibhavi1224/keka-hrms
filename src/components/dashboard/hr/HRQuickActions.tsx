@@ -2,14 +2,15 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Users, Calendar, DollarSign, BarChart3 } from 'lucide-react';
+import { Plus, Users, Calendar, DollarSign, Brain } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface HRQuickActionsProps {
   onInviteEmployee?: () => void;
+  onOpenAttritionPredictor?: () => void;
 }
 
-const HRQuickActions = ({ onInviteEmployee }: HRQuickActionsProps) => {
+const HRQuickActions = ({ onInviteEmployee, onOpenAttritionPredictor }: HRQuickActionsProps) => {
   const navigate = useNavigate();
 
   return (
@@ -21,7 +22,7 @@ const HRQuickActions = ({ onInviteEmployee }: HRQuickActionsProps) => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Button 
             variant="outline" 
             className="h-20 flex flex-col items-center justify-center space-y-2"
@@ -56,6 +57,15 @@ const HRQuickActions = ({ onInviteEmployee }: HRQuickActionsProps) => {
           >
             <DollarSign className="w-6 h-6" />
             <span className="text-sm">Payroll</span>
+          </Button>
+
+          <Button 
+            variant="outline" 
+            className="h-20 flex flex-col items-center justify-center space-y-2 border-purple-200 hover:bg-purple-50"
+            onClick={onOpenAttritionPredictor}
+          >
+            <Brain className="w-6 h-6 text-purple-600" />
+            <span className="text-sm text-purple-600">AI Attrition</span>
           </Button>
         </div>
       </CardContent>

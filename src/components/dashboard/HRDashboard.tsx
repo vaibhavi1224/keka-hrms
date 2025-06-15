@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AddEmployee from '@/components/hr/AddEmployee';
+import AttritionPredictor from '@/components/hr/AttritionPredictor';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import HRMetrics from './hr/HRMetrics';
@@ -13,6 +13,7 @@ import HRDepartmentOverview from './hr/HRDepartmentOverview';
 
 const HRDashboard = () => {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAttritionPredictor, setShowAttritionPredictor] = useState(false);
 
   const { data: employees = [], refetch: refetchEmployees } = useQuery({
     queryKey: ['employees'],
@@ -98,6 +99,22 @@ const HRDashboard = () => {
     refetchEmployees();
   };
 
+  if (showAttritionPredictor) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowAttritionPredictor(false)}
+          >
+            ← Back to Dashboard
+          </Button>
+        </div>
+        <AttritionPredictor />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -117,7 +134,10 @@ const HRDashboard = () => {
 
       {/* Quick Actions & Pending Tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <HRQuickActions onInviteEmployee={() => setShowAddModal(true)} />
+        <HRQuickActions 
+          onInviteEmployee={() => setShowAddModal(true)} 
+          onOpenAttritionPredictor={() => setShowAttritionPredictor(true)}
+        />
         <HRPendingTasks pendingInvitationsCount={pendingInvitationsCount} />
       </div>
 
