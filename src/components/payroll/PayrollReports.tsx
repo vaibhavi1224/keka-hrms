@@ -35,37 +35,37 @@ const PayrollReports = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Button 
               variant="outline" 
-              className="h-32 flex flex-col items-center justify-center space-y-3 hover:bg-gray-50 border-2 min-w-0 p-4"
+              className="h-36 flex flex-col items-center justify-center space-y-2 hover:bg-gray-50 border-2 p-3"
               onClick={() => setActiveTab('monthly')}
             >
               <FileText className="w-8 h-8 text-blue-600 flex-shrink-0" />
-              <div className="text-center w-full">
-                <span className="font-semibold text-lg block truncate">Monthly Report</span>
-                <span className="text-sm text-gray-500 block leading-tight mt-1">Generate monthly payroll reports</span>
+              <div className="text-center space-y-1 w-full px-2">
+                <div className="font-semibold text-base leading-tight">Monthly Report</div>
+                <div className="text-xs text-gray-500 leading-tight break-words">Generate monthly payroll reports</div>
               </div>
             </Button>
 
             <Button 
               variant="outline" 
-              className="h-32 flex flex-col items-center justify-center space-y-3 hover:bg-gray-50 border-2 min-w-0 p-4"
+              className="h-36 flex flex-col items-center justify-center space-y-2 hover:bg-gray-50 border-2 p-3"
               onClick={() => setActiveTab('export')}
             >
               <Download className="w-8 h-8 text-green-600 flex-shrink-0" />
-              <div className="text-center w-full">
-                <span className="font-semibold text-lg block truncate">Export Payroll</span>
-                <span className="text-sm text-gray-500 block leading-tight mt-1">Export payroll data to CSV/Excel</span>
+              <div className="text-center space-y-1 w-full px-2">
+                <div className="font-semibold text-base leading-tight">Export Payroll</div>
+                <div className="text-xs text-gray-500 leading-tight break-words">Export payroll data to CSV/Excel</div>
               </div>
             </Button>
 
             <Button 
               variant="outline" 
-              className="h-32 flex flex-col items-center justify-center space-y-3 hover:bg-gray-50 border-2 min-w-0 p-4"
+              className="h-36 flex flex-col items-center justify-center space-y-2 hover:bg-gray-50 border-2 p-3"
               onClick={() => setActiveTab('analytics')}
             >
               <BarChart className="w-8 h-8 text-purple-600 flex-shrink-0" />
-              <div className="text-center w-full">
-                <span className="font-semibold text-lg block truncate">Analytics</span>
-                <span className="text-sm text-gray-500 block leading-tight mt-1">View payroll analytics & insights</span>
+              <div className="text-center space-y-1 w-full px-2">
+                <div className="font-semibold text-base leading-tight">Analytics</div>
+                <div className="text-xs text-gray-500 leading-tight break-words">View payroll analytics & insights</div>
               </div>
             </Button>
           </div>
