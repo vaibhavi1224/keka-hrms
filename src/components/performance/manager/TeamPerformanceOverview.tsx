@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,29 +10,30 @@ import { Users, Target, Star, TrendingUp } from 'lucide-react';
 const TeamPerformanceOverview = () => {
   const { profile } = useProfile();
 
-  // Get team members (direct reports)
+  // Get team members from the same department
   const { data: teamMembers = [], isLoading } = useQuery({
-    queryKey: ['team-members', profile?.id],
+    queryKey: ['department-team-members', profile?.department],
     queryFn: async () => {
-      if (!profile?.id) return [];
+      if (!profile?.department) return [];
 
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('reporting_manager_id', profile.id)
-        .eq('is_active', true);
+        .eq('department', profile.department)
+        .eq('is_active', true)
+        .neq('id', profile.id); // Exclude the manager themselves
 
       if (error) throw error;
       return data || [];
     },
-    enabled: !!profile?.id
+    enabled: !!profile?.department
   });
 
   // Get team goals stats
   const { data: teamGoalsStats } = useQuery({
-    queryKey: ['team-goals-stats', profile?.id],
+    queryKey: ['team-goals-stats', profile?.department],
     queryFn: async () => {
-      if (!profile?.id || teamMembers.length === 0) return null;
+      if (!profile?.department || teamMembers.length === 0) return null;
 
       const teamMemberIds = teamMembers.map(m => m.id);
       
@@ -56,14 +56,14 @@ const TeamPerformanceOverview = () => {
         completionRate: total > 0 ? Math.round((completed / total) * 100) : 0
       };
     },
-    enabled: !!profile?.id && teamMembers.length > 0
+    enabled: !!profile?.department && teamMembers.length > 0
   });
 
   // Get recent appraisals for team
   const { data: recentAppraisals = [] } = useQuery({
-    queryKey: ['team-appraisals', profile?.id],
+    queryKey: ['department-appraisals', profile?.department],
     queryFn: async () => {
-      if (!profile?.id || teamMembers.length === 0) return [];
+      if (!profile?.department || teamMembers.length === 0) return [];
 
       const teamMemberIds = teamMembers.map(m => m.id);
       
@@ -81,7 +81,7 @@ const TeamPerformanceOverview = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!profile?.id && teamMembers.length > 0
+    enabled: !!profile?.department && teamMembers.length > 0
   });
 
   if (isLoading) {
@@ -103,7 +103,7 @@ const TeamPerformanceOverview = () => {
                 <Users className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Team Size</p>
+                <p className="text-sm text-gray-600">Department Size</p>
                 <p className="text-2xl font-bold">{teamMembers.length}</p>
               </div>
             </div>
@@ -162,7 +162,7 @@ const TeamPerformanceOverview = () => {
       {teamGoalsStats && (
         <Card>
           <CardHeader>
-            <CardTitle>Team Goals Progress</CardTitle>
+            <CardTitle>Department Goals Progress</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -191,17 +191,17 @@ const TeamPerformanceOverview = () => {
         </Card>
       )}
 
-      {/* Team Members Overview */}
+      {/* Department Members Overview */}
       <Card>
         <CardHeader>
-          <CardTitle>Team Members</CardTitle>
+          <CardTitle>Department Members - {profile?.department}</CardTitle>
         </CardHeader>
         <CardContent>
           {teamMembers.length === 0 ? (
             <div className="text-center py-8">
               <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Team Members</h3>
-              <p className="text-gray-600">You don't have any direct reports assigned yet.</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Department Members</h3>
+              <p className="text-gray-600">No other employees found in your department.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -235,7 +235,7 @@ const TeamPerformanceOverview = () => {
       {recentAppraisals.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Recent Appraisals</CardTitle>
+            <CardTitle>Recent Department Appraisals</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
