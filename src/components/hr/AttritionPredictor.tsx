@@ -209,9 +209,9 @@ const AttritionPredictor = () => {
             <div>
               <h4 className="font-semibold text-gray-900 mb-2">Risk Classifications:</h4>
               <ul className="text-sm text-gray-600 space-y-1">
-                <li>• <span className="text-red-600 font-medium">High Risk</span>: >70% probability of leaving</li>
+                <li>• <span className="text-red-600 font-medium">High Risk</span>: &gt;70% probability of leaving</li>
                 <li>• <span className="text-yellow-600 font-medium">Medium Risk</span>: 40-70% probability</li>
-                <li>• <span className="text-green-600 font-medium">Low Risk</span>: <40% probability</li>
+                <li>• <span className="text-green-600 font-medium">Low Risk</span>: &lt;40% probability</li>
               </ul>
             </div>
           </div>
