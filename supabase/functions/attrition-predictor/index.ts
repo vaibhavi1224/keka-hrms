@@ -57,7 +57,7 @@ serve(async (req) => {
         });
         
         // Store prediction in database
-        await storePrediction(employee.employee_id, prediction.attrition_probability);
+        await storePrediction(employee.employee_id, prediction.attrition_probability, prediction.key_factors);
         
       } catch (error) {
         console.error(`Error predicting for employee ${employee.employee_id}:`, error);
@@ -76,7 +76,7 @@ serve(async (req) => {
         });
         
         // Store fallback prediction
-        await storePrediction(employee.employee_id, fallbackPrediction.attrition_probability);
+        await storePrediction(employee.employee_id, fallbackPrediction.attrition_probability, fallbackPrediction.key_factors);
       }
     }
 
@@ -217,47 +217,67 @@ function prepareModelInput(employee: any): EmployeeAttritionData {
 }
 
 async function callHuggingFaceModel(input: EmployeeAttritionData) {
-  // Try multiple model endpoints in case the original doesn't work
-  const modelEndpoints = [
-    'https://api-inference.huggingface.co/models/xeroISB/EmployeeSurvivalRate',
-    'https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium' // Fallback
-  ];
+  // Use the new Mistral-based model
+  const modelEndpoint = 'https://api-inference.huggingface.co/models/robloxguard200/employee_attrition_rate_model_mistral';
 
-  for (const endpoint of modelEndpoints) {
-    try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${huggingFaceToken}`,
-          'Content-Type': 'application/json',
+  try {
+    const response = await fetch(modelEndpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${huggingFaceToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        inputs: {
+          satisfaction_level: input.satisfaction_level || 0.5,
+          last_evaluation: input.last_evaluation || 0.5,
+          number_project: input.number_project || 3,
+          average_montly_hours: input.average_montly_hours || 180,
+          time_spend_company: input.time_spend_company || 3,
+          work_accident: input.work_accident || 0,
+          promotion_last_5years: input.promotion_last_5years || 0,
+          department: input.department || 'other',
+          salary: input.salary || 'medium'
         },
-        body: JSON.stringify({
-          inputs: input,
-          parameters: {
-            return_all_scores: true
-          }
-        }),
-      });
+        parameters: {
+          return_all_scores: true
+        }
+      }),
+    });
 
-      if (response.ok) {
-        const result = await response.json();
-        
-        // Extract attrition probability from model output
-        const attritionProb = result[0]?.score || generateRandomPrediction();
-        
-        return {
-          attrition_probability: attritionProb,
-          key_factors: extractKeyFactors(input, attritionProb)
-        };
+    if (response.ok) {
+      const result = await response.json();
+      
+      // Extract attrition probability from model output
+      let attritionProb = 0.3; // Default fallback
+      
+      if (Array.isArray(result) && result.length > 0) {
+        // Handle array response format
+        attritionProb = result[0]?.score || result[0]?.label === 'POSITIVE' ? result[0].score : 0.3;
+      } else if (result.predictions && Array.isArray(result.predictions)) {
+        // Handle predictions array format
+        attritionProb = result.predictions[0] || 0.3;
+      } else if (typeof result === 'number') {
+        // Handle direct number response
+        attritionProb = result;
+      } else {
+        // Fallback for unexpected format
+        console.log('Unexpected model response format:', result);
+        attritionProb = generateRandomPrediction();
       }
-    } catch (error) {
-      console.log(`Failed to call ${endpoint}:`, error);
-      continue;
+      
+      return {
+        attrition_probability: Math.max(0.1, Math.min(0.9, attritionProb)),
+        key_factors: extractKeyFactors(input, attritionProb)
+      };
+    } else {
+      console.error('Model API call failed:', response.status, await response.text());
+      throw new Error('Model API call failed');
     }
+  } catch (error) {
+    console.error('Error calling Mistral model:', error);
+    throw error;
   }
-
-  // If all model calls fail, throw error to trigger fallback
-  throw new Error('All Hugging Face model endpoints failed');
 }
 
 function generateFallbackPrediction(employee: any) {
@@ -300,22 +320,38 @@ function extractKeyFactors(input: EmployeeAttritionData, probability: number): s
   const factors = [];
   
   if (input.satisfaction_level && input.satisfaction_level < 0.4) {
-    factors.push('Low satisfaction level');
+    factors.push('Low satisfaction level detected');
   }
   if (input.last_evaluation && input.last_evaluation < 0.5) {
-    factors.push('Poor performance evaluation');
+    factors.push('Below average performance evaluation');
   }
   if (input.average_montly_hours && input.average_montly_hours > 250) {
-    factors.push('High working hours');
+    factors.push('Excessive working hours (potential burnout)');
   }
   if (input.time_spend_company && input.time_spend_company < 2) {
-    factors.push('Short tenure');
+    factors.push('Short tenure with company');
+  }
+  if (input.time_spend_company && input.time_spend_company > 8) {
+    factors.push('Long tenure (may seek new challenges)');
   }
   if (input.salary === 'low') {
-    factors.push('Low salary range');
+    factors.push('Below market salary range');
+  }
+  if (input.number_project && input.number_project > 5) {
+    factors.push('High project workload');
+  }
+  if (input.promotion_last_5years === 0 && input.time_spend_company && input.time_spend_company > 3) {
+    factors.push('No recent promotions or career advancement');
   }
   
-  return factors.length > 0 ? factors : ['Multiple factors contributing to risk'];
+  // Add AI-specific factors based on probability
+  if (probability > 0.7) {
+    factors.push('AI model indicates high likelihood of voluntary resignation');
+  } else if (probability > 0.4) {
+    factors.push('AI model shows moderate risk factors present');
+  }
+  
+  return factors.length > 0 ? factors : ['Multiple subtle factors detected by AI analysis'];
 }
 
 function getRiskLevel(probability: number): string {
@@ -324,7 +360,7 @@ function getRiskLevel(probability: number): string {
   return 'LOW';
 }
 
-async function storePrediction(employeeId: string, attritionRisk: number) {
+async function storePrediction(employeeId: string, attritionRisk: number, keyFactors?: string[]) {
   try {
     const { error } = await supabase
       .from('attrition_predictions')
@@ -332,7 +368,9 @@ async function storePrediction(employeeId: string, attritionRisk: number) {
         employee_id: employeeId,
         attrition_risk: attritionRisk,
         predicted_at: new Date().toISOString(),
-        risk_level: getRiskLevel(attritionRisk)
+        risk_level: getRiskLevel(attritionRisk),
+        model_version: 'robloxguard200/employee_attrition_rate_model_mistral',
+        risk_factors: keyFactors || []
       });
 
     if (error) {

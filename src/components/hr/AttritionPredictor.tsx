@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -170,7 +169,7 @@ const AttritionPredictor = () => {
             <Brain className="w-6 h-6 text-purple-600" />
             AI Attrition Predictor
           </h2>
-          <p className="text-gray-600 mt-1">Predict which employees are likely to leave using AI analysis</p>
+          <p className="text-gray-600 mt-1">Predict which employees are likely to leave using advanced Mistral AI analysis</p>
         </div>
         <Button 
           onClick={handleRunForAllEmployees}
@@ -191,19 +190,20 @@ const AttritionPredictor = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Info className="w-5 h-5 text-blue-600" />
-            How We Predict Attrition Risk
+            Advanced AI Prediction Model
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h4 className="font-semibold text-gray-900 mb-2">AI Model Factors:</h4>
+              <h4 className="font-semibold text-gray-900 mb-2">Mistral AI Model Factors:</h4>
               <ul className="text-sm text-gray-600 space-y-1">
                 <li>• Employee satisfaction levels (from feedback ratings)</li>
-                <li>• Performance evaluation scores</li>
-                <li>• Working hours patterns</li>
-                <li>• Tenure and department analysis</li>
-                <li>• Salary competitiveness</li>
+                <li>• Performance evaluation scores and trends</li>
+                <li>• Working hours patterns and workload analysis</li>
+                <li>• Tenure and department-specific insights</li>
+                <li>• Salary competitiveness and promotion history</li>
+                <li>• Advanced ML pattern recognition</li>
               </ul>
             </div>
             <div>
@@ -213,6 +213,9 @@ const AttritionPredictor = () => {
                 <li>• <span className="text-yellow-600 font-medium">Medium Risk</span>: 40-70% probability</li>
                 <li>• <span className="text-green-600 font-medium">Low Risk</span>: &lt;40% probability</li>
               </ul>
+              <p className="text-xs text-gray-500 mt-3">
+                Model: robloxguard200/employee_attrition_rate_model_mistral
+              </p>
             </div>
           </div>
         </CardContent>
