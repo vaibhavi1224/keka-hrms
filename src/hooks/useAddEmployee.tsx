@@ -1,121 +1,91 @@
 
 import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-export interface EmployeeFormData {
-  name: string;
+interface EmployeeData {
   email: string;
   password: string;
-  role: string;
-  department: string;
-  designation: string;
-  salary: string;
-  date_of_joining: string;
+  first_name: string;
+  last_name: string;
+  role: 'employee' | 'manager' | 'hr';
+  phone?: string;
+  department?: string;
+  designation?: string;
+  date_of_joining?: string;
+  address?: string;
+  manager_id?: string;
 }
 
-export const useAddEmployee = (onSuccess: () => void) => {
-  const [formData, setFormData] = useState<EmployeeFormData>({
-    name: '',
-    email: '',
-    password: '',
-    role: 'employee',
-    department: 'no-department',
-    designation: '',
-    salary: '',
-    date_of_joining: ''
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [generatedCredentials, setGeneratedCredentials] = useState<{email: string, password: string} | null>(null);
+export const useAddEmployee = () => {
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { data: departments = [] } = useQuery({
-    queryKey: ['departments'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('departments')
-        .select('*')
-        .order('name');
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const generatePassword = () => {
-    const password = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
-    setFormData(prev => ({ ...prev, password }));
-  };
-
-  const addEmployeeMutation = useMutation({
-    mutationFn: async () => {
+  const addEmployee = async (employeeData: EmployeeData) => {
+    setIsLoading(true);
+    
+    try {
+      console.log('Starting employee creation process');
+      
       const { data, error } = await supabase.functions.invoke('create-employee', {
-        body: {
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          role: formData.role,
-          department: formData.department === 'no-department' ? '' : formData.department,
-          designation: formData.designation,
-          salary: formData.salary,
-          date_of_joining: formData.date_of_joining
-        }
+        body: employeeData
       });
 
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
+      if (error) {
+        console.error('Function invocation error');
+        
+        if (error.message?.includes('Password does not meet security requirements')) {
+          toast.error('Password Security Error', {
+            description: 'Password does not meet the required security standards'
+          });
+        } else if (error.message?.includes('Invalid email')) {
+          toast.error('Invalid Email', {
+            description: 'Please provide a valid email address'
+          });
+        } else {
+          toast.error('Failed to create employee', {
+            description: error.message || 'An unexpected error occurred'
+          });
+        }
+        throw error;
+      }
 
-      return data.credentials;
-    },
-    onSuccess: (credentials) => {
-      setGeneratedCredentials(credentials);
-      toast.success('Employee account created successfully');
-      onSuccess();
-    },
-    onError: (error) => {
-      toast.error('Failed to create employee account');
-      console.error('Error creating employee:', error);
+      if (!data?.success) {
+        const errorMessage = data?.error || 'Unknown error occurred';
+        console.error('Employee creation failed');
+        toast.error('Failed to create employee', {
+          description: errorMessage
+        });
+        throw new Error(errorMessage);
+      }
+
+      console.log('Employee created successfully');
+      toast.success('Employee created successfully', {
+        description: 'The new employee account has been set up and they will receive login instructions.'
+      });
+
+      return {
+        success: true,
+        employee_id: data.employee_id,
+        onboarding_status: data.onboarding_status
+      };
+
+    } catch (error: any) {
+      console.error('Error in addEmployee');
+      
+      if (!error.message?.includes('Password') && !error.message?.includes('email')) {
+        toast.error('Failed to create employee', {
+          description: 'Please check your connection and try again'
+        });
+      }
+      
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.name || !formData.email || !formData.password) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
-    addEmployeeMutation.mutate();
-  };
-
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const resetForm = () => {
-    setGeneratedCredentials(null);
-    setFormData({
-      name: '',
-      email: '',
-      password: '',
-      role: 'employee',
-      department: 'no-department',
-      designation: '',
-      salary: '',
-      date_of_joining: ''
-    });
   };
 
   return {
-    formData,
-    showPassword,
-    setShowPassword,
-    generatedCredentials,
-    departments,
-    generatePassword,
-    addEmployeeMutation,
-    handleSubmit,
-    handleChange,
-    resetForm
+    addEmployee,
+    isLoading
   };
 };

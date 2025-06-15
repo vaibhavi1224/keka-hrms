@@ -1,176 +1,230 @@
 
-import React from 'react';
-import { User, Mail, Briefcase, Calendar, Eye, EyeOff } from 'lucide-react';
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { EmployeeFormData } from '@/hooks/useAddEmployee';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import PasswordStrengthIndicator from '@/components/common/PasswordStrengthIndicator';
+import { Eye, EyeOff } from 'lucide-react';
+
+// Enhanced password validation schema
+const passwordSchema = z.string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+  .regex(/\d/, 'Password must contain at least one number')
+  .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, 'Password must contain at least one special character');
+
+const employeeFormSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: passwordSchema,
+  first_name: z.string().min(1, 'First name is required').max(50, 'First name too long'),
+  last_name: z.string().min(1, 'Last name is required').max(50, 'Last name too long'),
+  role: z.enum(['employee', 'manager', 'hr']),
+  phone: z.string().optional(),
+  department: z.string().optional(),
+  designation: z.string().optional(),
+  date_of_joining: z.string().optional(),
+  address: z.string().max(500, 'Address too long').optional(),
+  manager_id: z.string().optional(),
+});
+
+type EmployeeFormData = z.infer<typeof employeeFormSchema>;
 
 interface AddEmployeeFormProps {
-  formData: EmployeeFormData;
-  showPassword: boolean;
-  departments: any[];
+  onSubmit: (data: EmployeeFormData) => Promise<void>;
   isLoading: boolean;
-  onSubmit: (e: React.FormEvent) => void;
-  onChange: (field: string, value: string) => void;
-  onTogglePassword: () => void;
-  onGeneratePassword: () => void;
   onCancel: () => void;
 }
 
-const AddEmployeeForm = ({
-  formData,
-  showPassword,
-  departments,
-  isLoading,
+const AddEmployeeForm: React.FC<AddEmployeeFormProps> = ({
   onSubmit,
-  onChange,
-  onTogglePassword,
-  onGeneratePassword,
+  isLoading,
   onCancel
-}: AddEmployeeFormProps) => {
+}) => {
+  const [showPassword, setShowPassword] = useState(false);
+  
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors }
+  } = useForm<EmployeeFormData>({
+    resolver: zodResolver(employeeFormSchema),
+    defaultValues: {
+      role: 'employee'
+    }
+  });
+
+  const watchedPassword = watch('password', '');
+
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      <div>
-        <Label htmlFor="name" className="flex items-center gap-2">
-          <User className="w-4 h-4" />
-          Full Name *
-        </Label>
-        <Input
-          id="name"
-          value={formData.name}
-          onChange={(e) => onChange('name', e.target.value)}
-          placeholder="Enter full name"
-          required
-        />
-      </div>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>Add New Employee</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="first_name">First Name *</Label>
+              <Input
+                id="first_name"
+                {...register('first_name')}
+                placeholder="Enter first name"
+                maxLength={50}
+              />
+              {errors.first_name && (
+                <p className="text-sm text-red-600">{errors.first_name.message}</p>
+              )}
+            </div>
 
-      <div>
-        <Label htmlFor="email" className="flex items-center gap-2">
-          <Mail className="w-4 h-4" />
-          Email Address *
-        </Label>
-        <Input
-          id="email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => onChange('email', e.target.value)}
-          placeholder="Enter email address"
-          required
-        />
-      </div>
+            <div className="space-y-2">
+              <Label htmlFor="last_name">Last Name *</Label>
+              <Input
+                id="last_name"
+                {...register('last_name')}
+                placeholder="Enter last name"
+                maxLength={50}
+              />
+              {errors.last_name && (
+                <p className="text-sm text-red-600">{errors.last_name.message}</p>
+              )}
+            </div>
+          </div>
 
-      <div>
-        <Label htmlFor="password">Password *</Label>
-        <div className="flex gap-2">
-          <div className="relative flex-1">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email *</Label>
             <Input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              value={formData.password}
-              onChange={(e) => onChange('password', e.target.value)}
-              placeholder="Enter password"
-              required
+              id="email"
+              type="email"
+              {...register('email')}
+              placeholder="Enter email address"
             />
+            {errors.email && (
+              <p className="text-sm text-red-600">{errors.email.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Password *</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                {...register('password')}
+                placeholder="Enter secure password"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            {errors.password && (
+              <p className="text-sm text-red-600">{errors.password.message}</p>
+            )}
+            <PasswordStrengthIndicator password={watchedPassword} className="mt-2" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select onValueChange={(value) => setValue('role', value as any)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="employee">Employee</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="hr">HR</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                {...register('phone')}
+                placeholder="Enter phone number"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="department">Department</Label>
+              <Input
+                id="department"
+                {...register('department')}
+                placeholder="Enter department"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="designation">Designation</Label>
+              <Input
+                id="designation"
+                {...register('designation')}
+                placeholder="Enter designation"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="date_of_joining">Date of Joining</Label>
+            <Input
+              id="date_of_joining"
+              type="date"
+              {...register('date_of_joining')}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">Address</Label>
+            <Textarea
+              id="address"
+              {...register('address')}
+              placeholder="Enter address"
+              maxLength={500}
+              rows={3}
+            />
+            {errors.address && (
+              <p className="text-sm text-red-600">{errors.address.message}</p>
+            )}
+          </div>
+
+          <div className="flex justify-end space-x-4">
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-              onClick={onTogglePassword}
+              variant="outline"
+              onClick={onCancel}
+              disabled={isLoading}
             >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Creating...' : 'Create Employee'}
             </Button>
           </div>
-          <Button type="button" variant="outline" onClick={onGeneratePassword} className="shrink-0">
-            Generate
-          </Button>
-        </div>
-      </div>
-
-      <div>
-        <Label htmlFor="role">Role *</Label>
-        <Select value={formData.role} onValueChange={(value) => onChange('role', value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select role" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="employee">Employee</SelectItem>
-            <SelectItem value="manager">Manager</SelectItem>
-            <SelectItem value="hr">HR</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div>
-        <Label htmlFor="department" className="flex items-center gap-2">
-          <Briefcase className="w-4 h-4" />
-          Department
-        </Label>
-        <Select value={formData.department} onValueChange={(value) => onChange('department', value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select department" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="no-department">No Department</SelectItem>
-            {departments.map((dept) => (
-              <SelectItem key={dept.id} value={dept.name}>
-                {dept.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div>
-        <Label htmlFor="designation">Designation</Label>
-        <Input
-          id="designation"
-          value={formData.designation}
-          onChange={(e) => onChange('designation', e.target.value)}
-          placeholder="e.g., Software Developer, Sales Manager"
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="salary">Salary (Optional)</Label>
-        <Input
-          id="salary"
-          type="number"
-          value={formData.salary}
-          onChange={(e) => onChange('salary', e.target.value)}
-          placeholder="Enter annual salary"
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="joiningDate" className="flex items-center gap-2">
-          <Calendar className="w-4 h-4" />
-          Date of Joining
-        </Label>
-        <Input
-          id="joiningDate"
-          type="date"
-          value={formData.date_of_joining}
-          onChange={(e) => onChange('date_of_joining', e.target.value)}
-          min={new Date().toISOString().split('T')[0]}
-        />
-      </div>
-
-      <div className="flex space-x-3 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
-          Cancel
-        </Button>
-        <Button 
-          type="submit" 
-          className="flex-1 bg-blue-600 hover:bg-blue-700"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Creating...' : 'Create Employee'}
-        </Button>
-      </div>
-    </form>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

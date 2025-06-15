@@ -97,7 +97,7 @@ const NotificationCenter = () => {
         .limit(50);
 
       if (error) {
-        console.error('Error fetching notifications:', error);
+        console.error('Error fetching notifications');
         return;
       }
 
@@ -112,7 +112,7 @@ const NotificationCenter = () => {
       setNotifications(validNotifications);
       setUnreadCount(validNotifications.filter(n => !n.read).length);
     } catch (err) {
-      console.error('Error in fetchNotifications:', err);
+      console.error('Error in fetchNotifications');
     }
   };
 
@@ -124,7 +124,7 @@ const NotificationCenter = () => {
         .eq('id', notificationId);
 
       if (error) {
-        console.error('Error marking notification as read:', error);
+        console.error('Error marking notification as read');
         return;
       }
 
@@ -133,7 +133,7 @@ const NotificationCenter = () => {
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
-      console.error('Error in markAsRead:', err);
+      console.error('Error in markAsRead');
     }
   };
 
@@ -148,14 +148,14 @@ const NotificationCenter = () => {
         .eq('read', false);
 
       if (error) {
-        console.error('Error marking all notifications as read:', error);
+        console.error('Error marking all notifications as read');
         return;
       }
 
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (err) {
-      console.error('Error in markAllAsRead:', err);
+      console.error('Error in markAllAsRead');
     }
   };
 
@@ -167,13 +167,17 @@ const NotificationCenter = () => {
         .eq('id', notificationId);
 
       if (error) {
-        console.error('Error deleting notification:', error);
+        console.error('Error deleting notification');
         return;
       }
 
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      setUnreadCount(prev => {
+        const deletedNotification = notifications.find(n => n.id === notificationId);
+        return deletedNotification && !deletedNotification.read ? Math.max(0, prev - 1) : prev;
+      });
     } catch (err) {
-      console.error('Error in deleteNotification:', err);
+      console.error('Error in deleteNotification');
     }
   };
 
