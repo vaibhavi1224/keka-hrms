@@ -22,48 +22,51 @@ const HRQuickActions = ({ onInviteEmployee, onOpenAttritionPredictor }: HRQuickA
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <Button 
-            variant="outline" 
-            className="h-20 flex flex-col items-center justify-center space-y-2"
+            className="min-h-16 p-4 flex items-center justify-start space-x-4 bg-blue-600 hover:bg-blue-700 text-white"
             onClick={onInviteEmployee || (() => navigate('/employee-management'))}
           >
-            <Users className="w-6 h-6" />
-            <span className="text-sm">Add Employee</span>
+            <Users className="w-6 h-6 shrink-0" />
+            <div className="text-left">
+              <span className="text-sm font-medium">Add Employee</span>
+            </div>
           </Button>
           
           <Button 
-            variant="outline" 
-            className="h-20 flex flex-col items-center justify-center space-y-2"
+            className="min-h-16 p-4 flex items-center justify-start space-x-4 bg-green-600 hover:bg-green-700 text-white"
             onClick={() => navigate('/employees')}
           >
-            <Users className="w-6 h-6" />
-            <span className="text-sm">Manage Employees</span>
+            <Users className="w-6 h-6 shrink-0" />
+            <div className="text-left">
+              <span className="text-sm font-medium">Manage Employees</span>
+            </div>
           </Button>
           
           <Button 
-            variant="outline" 
-            className="h-20 flex flex-col items-center justify-center space-y-2"
+            className="min-h-16 p-4 flex items-center justify-start space-x-4 bg-purple-600 hover:bg-purple-700 text-white"
             onClick={() => navigate('/leave')}
           >
-            <Calendar className="w-6 h-6" />
-            <span className="text-sm">Leave Management</span>
+            <Calendar className="w-6 h-6 shrink-0" />
+            <div className="text-left">
+              <span className="text-sm font-medium">Leave Management</span>
+            </div>
           </Button>
           
           <Button 
-            variant="outline" 
-            className="h-20 flex flex-col items-center justify-center space-y-2"
+            className="min-h-16 p-4 flex items-center justify-start space-x-4 bg-orange-600 hover:bg-orange-700 text-white"
             onClick={() => navigate('/payroll')}
           >
-            <DollarSign className="w-6 h-6" />
-            <span className="text-sm">Payroll</span>
+            <DollarSign className="w-6 h-6 shrink-0" />
+            <div className="text-left">
+              <span className="text-sm font-medium">Payroll</span>
+            </div>
           </Button>
 
-          <Button 
-            variant="outline" 
-            className="h-20 flex flex-col items-center justify-center space-y-2 border-purple-200 hover:bg-purple-50"
+          <Button   
+            className="min-h-16 p-4 flex items-center justify-start space-x-4 bg-aqua-600 hover:bg-aqua-700 text-white"
             onClick={onOpenAttritionPredictor}
-          >
+            >
             <Brain className="w-6 h-6 text-purple-600" />
             <span className="text-sm text-purple-600">AI Attrition</span>
           </Button>
