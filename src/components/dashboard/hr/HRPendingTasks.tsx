@@ -47,7 +47,7 @@ const HRPendingTasks = ({ pendingInvitationsCount }: HRPendingTasksProps) => {
       count: pendingTasksData?.pendingLeaves || 0 
     },
     { 
-      task: `Process ${draftPayrolls: pendingTasksData?.draftPayrolls || 0} draft payrolls`, 
+      task: `Process ${pendingTasksData?.draftPayrolls || 0} draft payrolls`, 
       priority: 'medium', 
       count: pendingTasksData?.draftPayrolls || 0 
     },
