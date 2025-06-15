@@ -4,12 +4,10 @@ import { Clock, Calendar, DollarSign, User } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
 import ProfileUpdateDialog from '@/components/profile/ProfileUpdateDialog';
 
 const QuickActions = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const handleClockInOut = () => {
     navigate('/attendance');
