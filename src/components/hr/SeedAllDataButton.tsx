@@ -1,20 +1,13 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Database, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { seedAllDummyData } from '@/utils/comprehensiveDataSeeder';
 import { useToast } from '@/hooks/use-toast';
-
-interface SeedResult {
-  payroll: { success: number; errors: number };
-  performance: { success: number; errors: number };
-  bankDetails: { success: number; errors: number };
-  totalEmployees: number;
-}
+import { ComprehensiveSeedResult } from '@/types/seedingResults';
 
 const SeedAllDataButton = () => {
   const [isSeeding, setIsSeeding] = useState(false);
-  const [seedResult, setSeedResult] = useState<SeedResult | null>(null);
+  const [seedResult, setSeedResult] = useState<ComprehensiveSeedResult | null>(null);
   const { toast } = useToast();
 
   const handleSeedAllData = async () => {

@@ -1,12 +1,7 @@
-
 import { EmployeeData } from '@/types/employee';
 import { validateHRUser } from './validation/hrValidation';
 import { createEmployee } from './employee/employeeCreator';
-
-export interface SeedResult {
-  success: number;
-  errors: number;
-}
+import { SeedResult } from '@/types/seedingResults';
 
 export { validateHRUser, createEmployee };
 

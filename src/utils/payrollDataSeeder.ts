@@ -1,13 +1,8 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { addDummyBankDetailsForAllEmployees } from './employee/dummyBankDetailsGenerator';
 import { createSalaryStructure } from './generators/salaryStructureGenerator';
 import { generatePayrollRecords } from './generators/payrollRecordsGenerator';
-
-interface SeedResult {
-  success: number;
-  errors: number;
-}
+import { SeedResult } from '@/types/seedingResults';
 
 export async function seedPayrollData(): Promise<SeedResult> {
   console.log('Starting to seed payroll data...');

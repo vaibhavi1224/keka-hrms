@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { SeedResult } from '@/types/performanceData';
+import { SeedResult } from '@/types/seedingResults';
 import { generatePerformanceMetrics } from './generators/performanceMetricsGenerator';
 import { generatePerformanceFeedback } from './generators/feedbackGenerator';
 import { generateAttendanceRecords } from './generators/attendanceGenerator';
