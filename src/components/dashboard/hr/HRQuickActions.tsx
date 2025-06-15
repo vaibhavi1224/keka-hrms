@@ -67,8 +67,10 @@ const HRQuickActions = ({ onInviteEmployee, onOpenAttritionPredictor }: HRQuickA
             className="min-h-16 p-4 flex items-center justify-start space-x-4 bg-aqua-600 hover:bg-aqua-700 text-white"
             onClick={onOpenAttritionPredictor}
             >
-            <Brain className="w-6 h-6 text-purple-600" />
-            <span className="text-sm text-purple-600">AI Attrition</span>
+            <Brain className="w-6 h-6 shrink-0" />
+            <div className="text-left">
+            <span className="text-sm font-medium">AI Attrition</span>
+            </div>
           </Button>
         </div>
       </CardContent>
