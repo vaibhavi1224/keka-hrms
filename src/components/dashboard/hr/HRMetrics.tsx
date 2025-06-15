@@ -5,14 +5,27 @@ import { Card, CardContent } from '@/components/ui/card';
 
 interface HRMetricsProps {
   pendingInvitationsCount: number;
+  totalEmployees: number;
+  monthlyPayroll: number;
 }
 
-const HRMetrics = ({ pendingInvitationsCount }: HRMetricsProps) => {
+const HRMetrics = ({ pendingInvitationsCount, totalEmployees, monthlyPayroll }: HRMetricsProps) => {
+  // Format currency for Indian Rupees
+  const formatCurrency = (amount: number) => {
+    if (amount >= 10000000) { // 1 crore or more
+      return `₹${(amount / 10000000).toFixed(1)}Cr`;
+    } else if (amount >= 100000) { // 1 lakh or more
+      return `₹${(amount / 100000).toFixed(1)}L`;
+    } else {
+      return `₹${amount.toLocaleString('en-IN')}`;
+    }
+  };
+
   const metrics = [
     {
       title: 'Total Employees',
-      value: '248',
-      change: '+12 this month',
+      value: totalEmployees.toString(),
+      change: 'Active employees',
       icon: Users,
       color: 'text-blue-600',
       bg: 'bg-blue-50'
@@ -35,8 +48,8 @@ const HRMetrics = ({ pendingInvitationsCount }: HRMetricsProps) => {
     },
     {
       title: 'Monthly Payroll',
-      value: '₹48.5L',
-      change: 'Due in 5 days',
+      value: formatCurrency(monthlyPayroll),
+      change: 'Current month',
       icon: DollarSign,
       color: 'text-yellow-600',
       bg: 'bg-yellow-50'

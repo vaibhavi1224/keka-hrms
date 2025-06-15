@@ -28,6 +28,42 @@ const HRDashboard = () => {
     }
   });
 
+  const { data: salaryData = { totalEmployees: 0, monthlyPayroll: 0 } } = useQuery({
+    queryKey: ['salary-data'],
+    queryFn: async () => {
+      // Get total active employees count
+      const { count: totalEmployees, error: employeeError } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true);
+
+      if (employeeError) throw employeeError;
+
+      // Get salary structures for active employees
+      const { data: salaryStructures, error: salaryError } = await supabase
+        .from('salary_structures')
+        .select(`
+          ctc,
+          employee_id,
+          profiles!inner(is_active)
+        `)
+        .eq('is_active', true)
+        .eq('profiles.is_active', true);
+
+      if (salaryError) throw salaryError;
+
+      // Calculate total monthly payroll (CTC / 12)
+      const monthlyPayroll = salaryStructures?.reduce((total, structure) => {
+        return total + (Number(structure.ctc) / 12);
+      }, 0) || 0;
+
+      return {
+        totalEmployees: totalEmployees || 0,
+        monthlyPayroll: Math.round(monthlyPayroll)
+      };
+    }
+  });
+
   const handleAddSuccess = () => {
     refetchEmployees();
   };
@@ -43,7 +79,11 @@ const HRDashboard = () => {
       </div>
 
       {/* Key Metrics */}
-      <HRMetrics pendingInvitationsCount={0} />
+      <HRMetrics 
+        pendingInvitationsCount={0} 
+        totalEmployees={salaryData.totalEmployees}
+        monthlyPayroll={salaryData.monthlyPayroll}
+      />
 
       {/* Quick Actions & Pending Tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
