@@ -2,12 +2,13 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, FileText, Download, Users, Clock, Calendar, TrendingUp } from 'lucide-react';
+import { BarChart3, FileText, Download, Users, Clock, Calendar, TrendingUp, Brain } from 'lucide-react';
 import PayrollReports from './PayrollReports';
 import AttendanceReports from './AttendanceReports';
 import LeaveReports from './LeaveReports';
 import AnalyticsWidgets from './AnalyticsWidgets';
 import CustomReportBuilder from './CustomReportBuilder';
+import SmartReports from './SmartReports';
 
 interface ReportsAnalyticsDashboardProps {
   userRole: string;
@@ -40,10 +41,14 @@ const ReportsAnalyticsDashboard = ({ userRole }: ReportsAnalyticsDashboardProps)
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview" className="flex items-center space-x-2">
             <BarChart3 className="w-4 h-4" />
             <span>Overview</span>
+          </TabsTrigger>
+          <TabsTrigger value="smart-reports" className="flex items-center space-x-2">
+            <Brain className="w-4 h-4" />
+            <span>Smart Reports</span>
           </TabsTrigger>
           <TabsTrigger value="payroll" className="flex items-center space-x-2">
             <FileText className="w-4 h-4" />
@@ -99,6 +104,10 @@ const ReportsAnalyticsDashboard = ({ userRole }: ReportsAnalyticsDashboardProps)
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="smart-reports">
+          <SmartReports />
         </TabsContent>
 
         <TabsContent value="payroll">
