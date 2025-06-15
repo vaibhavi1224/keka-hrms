@@ -6,6 +6,7 @@ import { LogOut, Settings, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import NotificationCenter from '@/components/common/NotificationCenter';
+import HRMSLogo from '@/components/common/HRMSLogo';
 
 interface HeaderProps {
   userRole: string;
@@ -41,7 +42,7 @@ const Header = ({ userRole, userName }: HeaderProps) => {
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <h1 className="text-xl font-semibold text-gray-900">HRMS Pro</h1>
+          <HRMSLogo size="sm" />
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(userRole)}`}>
             {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
           </span>
