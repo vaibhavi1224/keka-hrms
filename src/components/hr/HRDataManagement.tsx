@@ -7,6 +7,7 @@ import SeedPerformanceDataButton from './SeedPerformanceDataButton';
 import SeedPayrollDataButton from './SeedPayrollDataButton';
 import AddBankDetailsButton from './AddBankDetailsButton';
 import SeedAllDataButton from './SeedAllDataButton';
+import SeedAttritionDataButton from './SeedAttritionDataButton';
 
 const HRDataManagement = () => {
   return (
@@ -22,6 +23,12 @@ const HRDataManagement = () => {
         <div className="border-2 border-purple-200 rounded-lg p-4 bg-purple-50">
           <h3 className="text-lg font-semibold text-purple-800 mb-3">🚀 Quick Setup</h3>
           <SeedAllDataButton />
+        </div>
+
+        {/* AI-Specific Data Seeder */}
+        <div className="border-2 border-indigo-200 rounded-lg p-4 bg-indigo-50">
+          <h3 className="text-lg font-semibold text-indigo-800 mb-3">🤖 AI Prediction Data</h3>
+          <SeedAttritionDataButton />
         </div>
 
         {/* Individual Seeders */}
