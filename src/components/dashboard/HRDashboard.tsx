@@ -40,13 +40,6 @@ const HRDashboard = () => {
           <h1 className="text-2xl font-bold text-gray-900">HR Management Dashboard</h1>
           <p className="text-gray-600 mt-1">Comprehensive overview of HR operations and employee management</p>
         </div>
-        <Button 
-          onClick={() => setShowAddModal(true)}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <UserPlus className="w-4 h-4 mr-2" />
-          Add Employee
-        </Button>
       </div>
 
       {/* Key Metrics */}
