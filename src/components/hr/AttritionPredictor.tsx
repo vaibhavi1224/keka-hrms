@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,7 +53,7 @@ const AttritionPredictor = () => {
   });
 
   // Fetch existing predictions with a simpler approach
-  const { data: predictions = [], isLoading: loadingPredictions } = useQuery({
+  const { data: predictions = [], isLoading: loadingPredictions, refetch: refetchPredictions } = useQuery({
     queryKey: ['attrition-predictions'],
     queryFn: async () => {
       // Direct table query to avoid RPC issues
@@ -91,7 +92,7 @@ const AttritionPredictor = () => {
       const { error } = await supabase
         .from('attrition_predictions')
         .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+        .gte('created_at', '1900-01-01'); // Delete all records by using a condition that matches all
 
       if (error) throw error;
     },
@@ -117,7 +118,7 @@ const AttritionPredictor = () => {
     const { error } = await supabase
       .from('attrition_predictions')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+      .gte('created_at', '1900-01-01'); // Delete all records
 
     if (error) {
       console.error('Error clearing old predictions:', error);
@@ -159,6 +160,14 @@ const AttritionPredictor = () => {
 
   const handleClearPredictions = () => {
     clearPredictionsMutation.mutate();
+  };
+
+  const handleRefreshData = () => {
+    refetchPredictions();
+    toast({
+      title: "Refreshing Data",
+      description: "Fetching the latest prediction results...",
+    });
   };
 
   const handleRunPrediction = () => {
@@ -385,13 +394,13 @@ const AttritionPredictor = () => {
             <span>Latest Attrition Risk Analysis Results</span>
             {predictions.length > 0 && (
               <Button
-                onClick={handleClearPredictions}
-                disabled={clearPredictionsMutation.isPending}
+                onClick={handleRefreshData}
+                disabled={loadingPredictions}
                 variant="ghost"
                 size="sm"
-                className="flex items-center gap-2 text-red-600 hover:text-red-700"
+                className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
               >
-                {clearPredictionsMutation.isPending ? (
+                {loadingPredictions ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
                 ) : (
                   <RefreshCw className="w-4 h-4" />
