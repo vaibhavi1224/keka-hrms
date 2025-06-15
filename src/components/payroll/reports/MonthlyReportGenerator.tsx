@@ -14,7 +14,7 @@ interface MonthlyReportGeneratorProps {
 
 const MonthlyReportGenerator = ({ onBack }: MonthlyReportGeneratorProps) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(2025);
   const { toast } = useToast();
 
   const { data: reportData, isLoading, refetch } = useQuery({
@@ -144,7 +144,7 @@ const MonthlyReportGenerator = ({ onBack }: MonthlyReportGeneratorProps) => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from({ length: 5 }, (_, i) => (
+                  {Array.from({ length: 6 }, (_, i) => (
                     <SelectItem key={2020 + i} value={(2020 + i).toString()}>
                       {2020 + i}
                     </SelectItem>

@@ -9,7 +9,7 @@ import { Calendar, Users, FileText, Download } from 'lucide-react';
 
 const PayrollGenerator = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(2025);
 
   const months = [
     { value: 1, label: 'January' },
@@ -26,7 +26,7 @@ const PayrollGenerator = () => {
     { value: 12, label: 'December' }
   ];
 
-  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
+  const years = Array.from({ length: 6 }, (_, i) => 2020 + i);
 
   return (
     <div className="space-y-6">

@@ -23,7 +23,7 @@ const PayrollPeriodSelector = ({
     { value: 10, label: 'October' }, { value: 11, label: 'November' }, { value: 12, label: 'December' }
   ];
 
-  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
+  const years = Array.from({ length: 6 }, (_, i) => 2020 + i);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

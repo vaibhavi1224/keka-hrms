@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +13,7 @@ interface PayrollAnalyticsProps {
 }
 
 const PayrollAnalytics = ({ onBack }: PayrollAnalyticsProps) => {
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(2025);
 
   const { data: analyticsData, isLoading } = useQuery({
     queryKey: ['payroll-analytics', selectedYear],
@@ -118,7 +117,7 @@ const PayrollAnalytics = ({ onBack }: PayrollAnalyticsProps) => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {Array.from({ length: 5 }, (_, i) => (
+              {Array.from({ length: 6 }, (_, i) => (
                 <SelectItem key={2020 + i} value={(2020 + i).toString()}>
                   {2020 + i}
                 </SelectItem>

@@ -15,7 +15,7 @@ interface PayrollExporterProps {
 
 const PayrollExporter = ({ onBack }: PayrollExporterProps) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(2025);
   const [exportFormat, setExportFormat] = useState<'csv' | 'excel'>('csv');
   const [includeDeductions, setIncludeDeductions] = useState(true);
   const [includeAllowances, setIncludeAllowances] = useState(true);
@@ -181,7 +181,7 @@ const PayrollExporter = ({ onBack }: PayrollExporterProps) => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from({ length: 5 }, (_, i) => (
+                  {Array.from({ length: 6 }, (_, i) => (
                     <SelectItem key={2020 + i} value={(2020 + i).toString()}>
                       {2020 + i}
                     </SelectItem>
