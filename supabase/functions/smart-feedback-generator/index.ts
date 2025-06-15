@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
@@ -159,7 +158,11 @@ async function generateGeminiFeedback(employeeData: any, feedbackType: string) {
     body: JSON.stringify({
       contents: [{
         parts: [{
-          text: `You are an expert HR professional specializing in performance reviews. Generate constructive, specific, and actionable feedback based on employee performance data. Be professional, balanced, and focus on both strengths and areas for improvement.\n\n${prompt}`
+          text: `You are an expert HR professional specializing in performance reviews. Generate constructive, specific, and actionable feedback based on employee performance data. Be professional, balanced, and focus on both strengths and areas for improvement.
+
+IMPORTANT: Provide ONLY plain text feedback without any markdown formatting. Do not use asterisks (*), hashtags (#), or any other markdown symbols. Write in clear, professional prose.
+
+${prompt}`
         }]
       }],
       generationConfig: {
@@ -178,7 +181,10 @@ async function generateGeminiFeedback(employeeData: any, feedbackType: string) {
   }
 
   const data = await response.json();
-  const content = data.candidates[0].content.parts[0].text;
+  let content = data.candidates[0].content.parts[0].text;
+  
+  // Clean up any markdown formatting that might still appear
+  content = cleanMarkdownFormatting(content);
   
   // Extract suggested rating from content or calculate based on data
   const suggestedRating = calculateSuggestedRating(employeeData);
@@ -189,6 +195,25 @@ async function generateGeminiFeedback(employeeData: any, feedbackType: string) {
     source: 'gemini',
     confidence: 0.9
   };
+}
+
+function cleanMarkdownFormatting(text: string): string {
+  // Remove markdown bold formatting
+  text = text.replace(/\*\*(.*?)\*\*/g, '$1');
+  text = text.replace(/\*(.*?)\*/g, '$1');
+  
+  // Remove markdown headers
+  text = text.replace(/#{1,6}\s+/g, '');
+  
+  // Clean up any remaining markdown symbols
+  text = text.replace(/`(.*?)`/g, '$1');
+  text = text.replace(/_{1,2}(.*?)_{1,2}/g, '$1');
+  
+  // Clean up excessive whitespace
+  text = text.replace(/\n{3,}/g, '\n\n');
+  text = text.replace(/[ ]{2,}/g, ' ');
+  
+  return text;
 }
 
 async function generateRuleBasedFeedback(employeeData: any, feedbackType: string) {
