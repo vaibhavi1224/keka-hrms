@@ -135,6 +135,44 @@ export type Database = {
           },
         ]
       }
+      designations: {
+        Row: {
+          created_at: string
+          department_id: string | null
+          description: string | null
+          id: string
+          level: number | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department_id?: string | null
+          description?: string | null
+          id?: string
+          level?: number | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string | null
+          description?: string | null
+          id?: string
+          level?: number | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "designations_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           created_at: string
@@ -379,6 +417,51 @@ export type Database = {
           {
             foreignKeyName: "offboarding_logs_processed_by_fkey"
             columns: ["processed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_structure: {
+        Row: {
+          created_at: string
+          effective_from: string
+          effective_to: string | null
+          employee_id: string
+          id: string
+          manager_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          effective_from?: string
+          effective_to?: string | null
+          employee_id: string
+          id?: string
+          manager_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          effective_from?: string
+          effective_to?: string | null
+          employee_id?: string
+          id?: string
+          manager_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_structure_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_structure_manager_id_fkey"
+            columns: ["manager_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -661,14 +744,47 @@ export type Database = {
           },
         ]
       }
+      permissions: {
+        Row: {
+          action: string
+          conditions: Json | null
+          created_at: string
+          id: string
+          resource: string
+          role: string
+        }
+        Insert: {
+          action: string
+          conditions?: Json | null
+          created_at?: string
+          id?: string
+          resource: string
+          role: string
+        }
+        Update: {
+          action?: string
+          conditions?: Json | null
+          created_at?: string
+          id?: string
+          resource?: string
+          role?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
+          address: string | null
           auth_method: string | null
           created_at: string
           date_of_joining: string | null
           department: string | null
           designation: string | null
+          designation_id: string | null
           email: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
+          employee_code: string | null
           employee_id: string | null
           first_name: string | null
           id: string
@@ -678,8 +794,10 @@ export type Database = {
           last_name: string | null
           last_working_date: string | null
           manager_id: string | null
+          onboarding_status: string | null
           phone: string | null
           profile_picture: string | null
+          reporting_manager_id: string | null
           role: Database["public"]["Enums"]["user_role"]
           status: string | null
           updated_at: string
@@ -687,12 +805,18 @@ export type Database = {
           working_hours_start: string | null
         }
         Insert: {
+          address?: string | null
           auth_method?: string | null
           created_at?: string
           date_of_joining?: string | null
           department?: string | null
           designation?: string | null
+          designation_id?: string | null
           email: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          employee_code?: string | null
           employee_id?: string | null
           first_name?: string | null
           id: string
@@ -702,8 +826,10 @@ export type Database = {
           last_name?: string | null
           last_working_date?: string | null
           manager_id?: string | null
+          onboarding_status?: string | null
           phone?: string | null
           profile_picture?: string | null
+          reporting_manager_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           status?: string | null
           updated_at?: string
@@ -711,12 +837,18 @@ export type Database = {
           working_hours_start?: string | null
         }
         Update: {
+          address?: string | null
           auth_method?: string | null
           created_at?: string
           date_of_joining?: string | null
           department?: string | null
           designation?: string | null
+          designation_id?: string | null
           email?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          employee_code?: string | null
           employee_id?: string | null
           first_name?: string | null
           id?: string
@@ -726,8 +858,10 @@ export type Database = {
           last_name?: string | null
           last_working_date?: string | null
           manager_id?: string | null
+          onboarding_status?: string | null
           phone?: string | null
           profile_picture?: string | null
+          reporting_manager_id?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           status?: string | null
           updated_at?: string
@@ -735,6 +869,13 @@ export type Database = {
           working_hours_start?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_designation_id_fkey"
+            columns: ["designation_id"]
+            isOneToOne: false
+            referencedRelation: "designations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_invited_by_fkey"
             columns: ["invited_by"]
@@ -745,6 +886,13 @@ export type Database = {
           {
             foreignKeyName: "profiles_manager_id_fkey"
             columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_reporting_manager_id_fkey"
+            columns: ["reporting_manager_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -867,14 +1015,116 @@ export type Database = {
           },
         ]
       }
+      workflow_steps: {
+        Row: {
+          created_at: string
+          id: string
+          is_required: boolean | null
+          required_role: string | null
+          step_description: string | null
+          step_name: string
+          step_number: number
+          workflow_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_required?: boolean | null
+          required_role?: string | null
+          step_description?: string | null
+          step_name: string
+          step_number: number
+          workflow_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_required?: boolean | null
+          required_role?: string | null
+          step_description?: string | null
+          step_name?: string
+          step_number?: number
+          workflow_type?: string
+        }
+        Relationships: []
+      }
+      workflows: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_step: number | null
+          employee_id: string
+          id: string
+          initiated_by: string
+          status: string
+          step_data: Json | null
+          total_steps: number
+          updated_at: string
+          workflow_type: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number | null
+          employee_id: string
+          id?: string
+          initiated_by: string
+          status?: string
+          step_data?: Json | null
+          total_steps: number
+          updated_at?: string
+          workflow_type: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number | null
+          employee_id?: string
+          id?: string
+          initiated_by?: string
+          status?: string
+          step_data?: Json | null
+          total_steps?: number
+          updated_at?: string
+          workflow_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflows_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflows_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_user_permissions: {
+        Args: { user_uuid: string }
+        Returns: {
+          resource: string
+          action: string
+          conditions: Json
+        }[]
+      }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      has_permission: {
+        Args: { user_uuid: string; resource_name: string; action_name: string }
+        Returns: boolean
       }
       is_hr: {
         Args: { user_uuid: string }

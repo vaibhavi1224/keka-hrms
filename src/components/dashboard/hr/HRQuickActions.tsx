@@ -1,8 +1,9 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserPlus, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import WorkflowManager from '@/components/employees/WorkflowManager';
+import { UserPlus, Users, Building, ClipboardList } from 'lucide-react';
 
 interface HRQuickActionsProps {
   onInviteEmployee: () => void;
@@ -12,19 +13,36 @@ const HRQuickActions = ({ onInviteEmployee }: HRQuickActionsProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Zap className="w-5 h-5" />
-          Quick Actions
-        </CardTitle>
+        <CardTitle>Quick Actions</CardTitle>
       </CardHeader>
       <CardContent>
-        <Button 
-          onClick={onInviteEmployee}
-          className="w-full bg-blue-600 hover:bg-blue-700"
-        >
-          <UserPlus className="w-4 h-4 mr-2" />
-          Invite New Employee
-        </Button>
+        <div className="space-y-3">
+          <Button 
+            className="w-full justify-start bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={onInviteEmployee}
+          >
+            <UserPlus className="w-4 h-4 mr-2" />
+            Invite New Employee
+          </Button>
+          
+          <WorkflowManager />
+          
+          <Button 
+            className="w-full justify-start bg-purple-600 hover:bg-purple-700 text-white"
+            onClick={() => window.location.href = '/employee-management'}
+          >
+            <Users className="w-4 h-4 mr-2" />
+            Employee Management
+          </Button>
+          
+          <Button 
+            className="w-full justify-start bg-green-600 hover:bg-green-700 text-white"
+            onClick={() => window.location.href = '/employee-management?tab=departments'}
+          >
+            <Building className="w-4 h-4 mr-2" />
+            Manage Departments
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
