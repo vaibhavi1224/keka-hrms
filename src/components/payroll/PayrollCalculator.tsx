@@ -1,16 +1,14 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Calculator, Users, FileText, AlertTriangle } from 'lucide-react';
+import { Calculator, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import PayrollPeriodSelector from './PayrollPeriodSelector';
+import PayrollActions from './PayrollActions';
+import EmployeeSelectionList from './EmployeeSelectionList';
 
 interface Employee {
   id: string;
@@ -32,15 +30,6 @@ const PayrollCalculator = () => {
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  const months = [
-    { value: 1, label: 'January' }, { value: 2, label: 'February' }, { value: 3, label: 'March' },
-    { value: 4, label: 'April' }, { value: 5, label: 'May' }, { value: 6, label: 'June' },
-    { value: 7, label: 'July' }, { value: 8, label: 'August' }, { value: 9, label: 'September' },
-    { value: 10, label: 'October' }, { value: 11, label: 'November' }, { value: 12, label: 'December' }
-  ];
-
-  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
 
   // Fetch all employees and check if they have salary structures
   const { data: employees = [] } = useQuery({
@@ -208,6 +197,9 @@ const PayrollCalculator = () => {
 
   const employeesWithSalary = employees.filter(emp => emp.has_salary_structure);
   const employeesWithoutSalary = employees.filter(emp => !emp.has_salary_structure);
+  const selectedEmployeesWithSalaryCount = selectedEmployees.filter(id => 
+    employees.find(emp => emp.id === id)?.has_salary_structure
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -219,39 +211,12 @@ const PayrollCalculator = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div className="space-y-2">
-              <Label>Select Month</Label>
-              <Select value={selectedMonth.toString()} onValueChange={(value) => setSelectedMonth(Number(value))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {months.map((month) => (
-                    <SelectItem key={month.value} value={month.value.toString()}>
-                      {month.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Select Year</Label>
-              <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(Number(value))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <PayrollPeriodSelector
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            onMonthChange={setSelectedMonth}
+            onYearChange={setSelectedYear}
+          />
 
           {employeesWithoutSalary.length > 0 && (
             <Alert className="mb-6">
@@ -263,104 +228,22 @@ const PayrollCalculator = () => {
             </Alert>
           )}
 
-          <div className="flex space-x-3 mb-6">
-            <Button 
-              onClick={handleCalculateAll}
-              disabled={calculatePayrollMutation.isPending || employeesWithSalary.length === 0}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Users className="w-4 h-4 mr-2" />
-              Calculate All Employees ({employeesWithSalary.length})
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={handleCalculateSelected}
-              disabled={calculatePayrollMutation.isPending || selectedEmployees.length === 0}
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              Calculate Selected ({selectedEmployees.filter(id => 
-                employees.find(emp => emp.id === id)?.has_salary_structure
-              ).length})
-            </Button>
-          </div>
+          <PayrollActions
+            onCalculateAll={handleCalculateAll}
+            onCalculateSelected={handleCalculateSelected}
+            isLoading={calculatePayrollMutation.isPending}
+            employeesWithSalaryCount={employeesWithSalary.length}
+            selectedEmployeesWithSalaryCount={selectedEmployeesWithSalaryCount}
+          />
 
-          <div className="space-y-4">
-            <h3 className="font-semibold">Employee Selection & Manual Adjustments</h3>
-            
-            {employeesWithSalary.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium text-green-700 mb-3">
-                  Employees Ready for Payroll ({employeesWithSalary.length})
-                </h4>
-                {employeesWithSalary.map((employee) => (
-                  <div key={employee.id} className="border rounded-lg p-4 mb-3">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedEmployees.includes(employee.id)}
-                        onChange={(e) => handleEmployeeSelection(employee.id, e.target.checked)}
-                        className="rounded"
-                      />
-                      <span className="font-medium">
-                        {employee.first_name} {employee.last_name} ({employee.employee_id})
-                      </span>
-                    </div>
-                    
-                    {selectedEmployees.includes(employee.id) && (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 ml-6">
-                        <div className="space-y-2">
-                          <Label>Bonus (₹)</Label>
-                          <Input
-                            type="number"
-                            value={manualAdjustments[employee.id]?.bonus || 0}
-                            onChange={(e) => updateManualAdjustment(employee.id, 'bonus', Number(e.target.value))}
-                            placeholder="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Deductions (₹)</Label>
-                          <Input
-                            type="number"
-                            value={manualAdjustments[employee.id]?.deductions || 0}
-                            onChange={(e) => updateManualAdjustment(employee.id, 'deductions', Number(e.target.value))}
-                            placeholder="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Notes</Label>
-                          <Textarea
-                            value={manualAdjustments[employee.id]?.notes || ''}
-                            onChange={(e) => updateManualAdjustment(employee.id, 'notes', e.target.value)}
-                            placeholder="Optional notes"
-                            rows={2}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {employeesWithoutSalary.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium text-red-700 mb-3">
-                  Employees Missing Salary Structures ({employeesWithoutSalary.length})
-                </h4>
-                {employeesWithoutSalary.map((employee) => (
-                  <div key={employee.id} className="border border-red-200 rounded-lg p-4 mb-3 bg-red-50">
-                    <div className="flex items-center space-x-3">
-                      <AlertTriangle className="w-4 h-4 text-red-500" />
-                      <span className="font-medium text-red-700">
-                        {employee.first_name} {employee.last_name} ({employee.employee_id})
-                      </span>
-                      <span className="text-sm text-red-600">No salary structure</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <EmployeeSelectionList
+            employeesWithSalary={employeesWithSalary}
+            employeesWithoutSalary={employeesWithoutSalary}
+            selectedEmployees={selectedEmployees}
+            manualAdjustments={manualAdjustments}
+            onEmployeeSelection={handleEmployeeSelection}
+            onManualAdjustmentUpdate={updateManualAdjustment}
+          />
         </CardContent>
       </Card>
     </div>
