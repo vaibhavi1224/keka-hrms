@@ -1,17 +1,66 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface HRPendingTasksProps {
   pendingInvitationsCount: number;
 }
 
 const HRPendingTasks = ({ pendingInvitationsCount }: HRPendingTasksProps) => {
+  // Fetch real pending tasks data
+  const { data: pendingTasksData } = useQuery({
+    queryKey: ['pending-tasks'],
+    queryFn: async () => {
+      // Get pending leave requests
+      const { data: pendingLeaves } = await supabase
+        .from('leave_requests')
+        .select('*')
+        .eq('status', 'pending');
+
+      // Get employees with missing documents or incomplete profiles
+      const { data: incompleteProfiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('is_active', true)
+        .or('first_name.is.null,last_name.is.null,department.is.null,designation.is.null');
+
+      // Get draft payrolls
+      const { data: draftPayrolls } = await supabase
+        .from('payrolls')
+        .select('*')
+        .eq('status', 'draft');
+
+      return {
+        pendingLeaves: pendingLeaves?.length || 0,
+        incompleteProfiles: incompleteProfiles?.length || 0,
+        draftPayrolls: draftPayrolls?.length || 0
+      };
+    }
+  });
+
   const pendingTasks = [
-    { task: 'Review 8 pending leave requests', priority: 'high', count: 8 },
-    { task: 'Approve overtime for 12 employees', priority: 'medium', count: 12 },
-    { task: `Process ${pendingInvitationsCount} pending invitations`, priority: 'high', count: pendingInvitationsCount },
-    { task: 'Update 5 employee records', priority: 'low', count: 5 },
+    { 
+      task: `Review ${pendingTasksData?.pendingLeaves || 0} pending leave requests`, 
+      priority: 'high', 
+      count: pendingTasksData?.pendingLeaves || 0 
+    },
+    { 
+      task: `Process ${draftPayrolls: pendingTasksData?.draftPayrolls || 0} draft payrolls`, 
+      priority: 'medium', 
+      count: pendingTasksData?.draftPayrolls || 0 
+    },
+    { 
+      task: `Process ${pendingInvitationsCount} pending invitations`, 
+      priority: 'high', 
+      count: pendingInvitationsCount 
+    },
+    { 
+      task: `Update ${pendingTasksData?.incompleteProfiles || 0} incomplete employee records`, 
+      priority: 'low', 
+      count: pendingTasksData?.incompleteProfiles || 0 
+    },
   ];
 
   return (

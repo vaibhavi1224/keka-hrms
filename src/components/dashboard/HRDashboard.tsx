@@ -28,6 +28,21 @@ const HRDashboard = () => {
     }
   });
 
+  // Get pending invitations count
+  const { data: pendingInvitationsCount = 0 } = useQuery({
+    queryKey: ['pending-invitations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('status', 'PENDING')
+        .eq('is_active', true);
+
+      if (error) throw error;
+      return data?.length || 0;
+    }
+  });
+
   const { data: salaryData = { totalEmployees: 0, monthlyPayroll: 0 } } = useQuery({
     queryKey: ['salary-data'],
     queryFn: async () => {
@@ -95,7 +110,7 @@ const HRDashboard = () => {
 
       {/* Key Metrics */}
       <HRMetrics 
-        pendingInvitationsCount={0} 
+        pendingInvitationsCount={pendingInvitationsCount} 
         totalEmployees={salaryData.totalEmployees}
         monthlyPayroll={salaryData.monthlyPayroll}
       />
@@ -103,7 +118,7 @@ const HRDashboard = () => {
       {/* Quick Actions & Pending Tasks */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <HRQuickActions onInviteEmployee={() => setShowAddModal(true)} />
-        <HRPendingTasks pendingInvitationsCount={0} />
+        <HRPendingTasks pendingInvitationsCount={pendingInvitationsCount} />
       </div>
 
       {/* Compliance Alerts & Department Overview */}
