@@ -32,6 +32,7 @@ const AttendanceTracker = () => {
   const checkFaceVerificationPreference = () => {
     const preference = localStorage.getItem('useFaceVerification');
     setUseFaceVerification(preference === 'true');
+    console.log('Face verification preference:', preference);
   };
 
   const checkTodayAttendance = async () => {
@@ -79,6 +80,7 @@ const AttendanceTracker = () => {
   };
 
   const performCheckIn = async () => {
+    console.log('Performing check-in...');
     if (!profile?.id) return;
     
     setLoading(true);
@@ -93,7 +95,7 @@ const AttendanceTracker = () => {
           date: today,
           check_in_time: now,
           status: 'present',
-          biometric_verified: showFaceVerification
+          biometric_verified: useFaceVerification
         });
 
       if (error) throw error;
@@ -101,9 +103,10 @@ const AttendanceTracker = () => {
       setIsCheckedIn(true);
       setCheckInTime(new Date().toLocaleTimeString());
       setShowFaceVerification(false);
+      console.log('Check-in successful');
       toast({
         title: "Clocked In Successfully",
-        description: `Clocked in at ${new Date().toLocaleTimeString()}${showFaceVerification ? ' (Face Verified)' : ''}`,
+        description: `Clocked in at ${new Date().toLocaleTimeString()}${useFaceVerification ? ' (Face Verified)' : ''}`,
       });
     } catch (error) {
       console.error('Clock in error:', error);
@@ -118,6 +121,7 @@ const AttendanceTracker = () => {
   };
 
   const performCheckOut = async () => {
+    console.log('Performing check-out...');
     if (!profile?.id) return;
     
     setLoading(true);
@@ -130,7 +134,7 @@ const AttendanceTracker = () => {
         .update({
           check_out_time: now,
           updated_at: now,
-          biometric_verified_out: showFaceVerification
+          biometric_verified_out: useFaceVerification
         })
         .eq('user_id', profile.id)
         .eq('date', today);
@@ -140,9 +144,10 @@ const AttendanceTracker = () => {
       setIsCheckedIn(false);
       setCheckOutTime(new Date().toLocaleTimeString());
       setShowFaceVerification(false);
+      console.log('Check-out successful');
       toast({
         title: "Clocked Out Successfully",
-        description: `Clocked out at ${new Date().toLocaleTimeString()}${showFaceVerification ? ' (Face Verified)' : ''}`,
+        description: `Clocked out at ${new Date().toLocaleTimeString()}${useFaceVerification ? ' (Face Verified)' : ''}`,
       });
     } catch (error) {
       console.error('Clock out error:', error);
@@ -157,24 +162,31 @@ const AttendanceTracker = () => {
   };
 
   const handleCheckIn = () => {
+    console.log('Check-in button clicked, useFaceVerification:', useFaceVerification);
     if (useFaceVerification) {
+      console.log('Starting face verification for check-in');
       setFaceVerificationAction('checkin');
       setShowFaceVerification(true);
     } else {
+      console.log('Proceeding with normal check-in');
       performCheckIn();
     }
   };
 
   const handleCheckOut = () => {
+    console.log('Check-out button clicked, useFaceVerification:', useFaceVerification);
     if (useFaceVerification) {
+      console.log('Starting face verification for check-out');
       setFaceVerificationAction('checkout');
       setShowFaceVerification(true);
     } else {
+      console.log('Proceeding with normal check-out');
       performCheckOut();
     }
   };
 
   const handleFaceVerificationSuccess = () => {
+    console.log('Face verification successful, action:', faceVerificationAction);
     if (faceVerificationAction === 'checkin') {
       performCheckIn();
     } else {
@@ -186,6 +198,7 @@ const AttendanceTracker = () => {
     const newPreference = !useFaceVerification;
     setUseFaceVerification(newPreference);
     localStorage.setItem('useFaceVerification', newPreference.toString());
+    console.log('Face verification preference updated:', newPreference);
     toast({
       title: newPreference ? "Face Verification Enabled" : "Face Verification Disabled",
       description: `Face verification ${newPreference ? 'enabled' : 'disabled'} for attendance.`,
@@ -193,6 +206,7 @@ const AttendanceTracker = () => {
   };
 
   if (showFaceVerification) {
+    console.log('Rendering face verification component');
     return (
       <div className="space-y-6">
         <div>

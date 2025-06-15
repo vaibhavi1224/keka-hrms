@@ -1,6 +1,6 @@
 
-import React, { useState, useRef, useCallback } from 'react';
-import { Camera, CheckCircle, XCircle, Loader2, RotateCcw } from 'lucide-react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { Camera, CheckCircle, XCircle, Loader2, RotateCcw, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -16,13 +16,60 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string>('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
+  // Debug camera capabilities
+  useEffect(() => {
+    const checkCameraSupport = async () => {
+      console.log('Checking camera support...');
+      setDebugInfo('Checking camera support...');
+      
+      // Check if getUserMedia is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        const error = 'Camera not supported in this browser';
+        console.error(error);
+        setDebugInfo(error);
+        setCameraError(error);
+        return;
+      }
+
+      // Check if we're in a secure context
+      if (!window.isSecureContext && window.location.hostname !== 'localhost') {
+        const error = 'Camera requires HTTPS or localhost';
+        console.error(error);
+        setDebugInfo(error);
+        setCameraError(error);
+        return;
+      }
+
+      try {
+        // Check available devices
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        console.log('Video devices found:', videoDevices.length);
+        setDebugInfo(`Found ${videoDevices.length} camera(s)`);
+        
+        if (videoDevices.length === 0) {
+          setCameraError('No camera found on this device');
+        }
+      } catch (error) {
+        console.error('Error checking devices:', error);
+        setDebugInfo('Error checking camera devices');
+      }
+    };
+
+    checkCameraSupport();
+  }, []);
+
   const startCamera = useCallback(async () => {
     try {
+      console.log('Starting camera...');
       setCameraError(null);
+      setDebugInfo('Requesting camera access...');
+      
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 640 },
@@ -31,10 +78,19 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
         }
       });
       
+      console.log('Camera stream obtained');
+      setDebugInfo('Camera access granted');
+      
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         setStream(mediaStream);
         setIsCapturing(true);
+        
+        // Wait for video to be ready
+        videoRef.current.onloadedmetadata = () => {
+          console.log('Video metadata loaded');
+          setDebugInfo('Camera ready');
+        };
       }
     } catch (error: any) {
       console.error('Error accessing camera:', error);
@@ -42,12 +98,19 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
       
       if (error.name === 'NotAllowedError') {
         errorMessage += 'Please allow camera access and try again.';
+        setDebugInfo('Camera permission denied');
       } else if (error.name === 'NotFoundError') {
         errorMessage += 'No camera found on this device.';
+        setDebugInfo('No camera device found');
       } else if (error.name === 'NotSupportedError') {
         errorMessage += 'Camera not supported in this browser.';
+        setDebugInfo('Camera not supported');
+      } else if (error.name === 'NotReadableError') {
+        errorMessage += 'Camera is already in use by another application.';
+        setDebugInfo('Camera busy');
       } else {
         errorMessage += 'Please check camera permissions and try again.';
+        setDebugInfo(`Camera error: ${error.message}`);
       }
       
       setCameraError(errorMessage);
@@ -60,25 +123,39 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
   }, [toast]);
 
   const stopCamera = useCallback(() => {
+    console.log('Stopping camera...');
     if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach(track => {
+        track.stop();
+        console.log('Camera track stopped');
+      });
       setStream(null);
     }
     setIsCapturing(false);
+    setDebugInfo('Camera stopped');
   }, [stream]);
 
   const capturePhoto = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current) return;
+    console.log('Capturing photo...');
+    if (!videoRef.current || !canvasRef.current) {
+      console.error('Video or canvas ref not available');
+      return;
+    }
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
 
-    if (!context) return;
+    if (!context) {
+      console.error('Could not get canvas context');
+      return;
+    }
 
     // Set canvas dimensions to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
+
+    console.log(`Canvas dimensions: ${canvas.width}x${canvas.height}`);
 
     // Draw the video frame to canvas
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -87,10 +164,14 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
     const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
     setCapturedImage(imageDataUrl);
     stopCamera();
+    setDebugInfo('Photo captured successfully');
+    console.log('Photo captured');
   }, [stopCamera]);
 
   const simulateFaceVerification = async () => {
+    console.log('Starting face verification...');
     setIsVerifying(true);
+    setDebugInfo('Processing face verification...');
     
     // Simulate face verification process (2-3 seconds)
     await new Promise(resolve => setTimeout(resolve, 2500));
@@ -99,14 +180,18 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
     const isVerified = Math.random() > 0.1;
     
     setIsVerifying(false);
+    console.log('Face verification result:', isVerified);
     
     if (isVerified) {
+      setDebugInfo('Face verification successful');
       toast({
         title: "Face Verified",
         description: `Identity confirmed for ${action === 'checkin' ? 'check-in' : 'check-out'}.`,
       });
+      console.log('Calling onSuccess callback');
       onSuccess();
     } else {
+      setDebugInfo('Face verification failed');
       toast({
         title: "Verification Failed",
         description: "Face verification failed. Please try again.",
@@ -117,11 +202,15 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
   };
 
   const retakePhoto = () => {
+    console.log('Retaking photo...');
     setCapturedImage(null);
+    setDebugInfo('Ready to retake photo');
     startCamera();
   };
 
   const proceedWithoutVerification = () => {
+    console.log('Proceeding without verification');
+    setDebugInfo('Manual check-in selected');
     toast({
       title: "Manual Check-in",
       description: `Proceeding with manual ${action === 'checkin' ? 'check-in' : 'check-out'}.`,
@@ -136,6 +225,11 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
           <Camera className="w-5 h-5 text-blue-500" />
           Face Verification {action === 'checkin' ? 'Check-In' : 'Check-Out'}
         </CardTitle>
+        {debugInfo && (
+          <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+            Debug: {debugInfo}
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         {cameraError ? (
