@@ -46,13 +46,13 @@ const HRDashboard = () => {
 
       console.log('Active employees found:', activeEmployees?.length || 0);
 
-      // Get salary structures for active employees
+      // Get salary structures for active employees - fix the relationship ambiguity
       const { data: salaryStructures, error: salaryError } = await supabase
         .from('salary_structures')
         .select(`
           ctc,
           employee_id,
-          profiles!inner(is_active)
+          profiles!salary_structures_employee_id_fkey(is_active)
         `)
         .eq('is_active', true)
         .eq('profiles.is_active', true);
