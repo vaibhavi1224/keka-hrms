@@ -27,7 +27,7 @@ EMPLOYEE PROFILE:
 - Date of Joining: ${profile?.date_of_joining ? new Date(profile.date_of_joining).toLocaleDateString() : 'Not specified'}
 - Phone: ${profile?.phone || 'Not provided'}
 - Status: ${profile?.is_active ? 'Active' : 'Inactive'}
-- Working Hours: ${profile?.working_hours_start || '09:00'} - ${profile?.working_hours_end || '18:00'}
+- Working Hours: ${profile?.working_hours_start || '09:00'} - ${profile?.working_hours_end || '17:00'}
 
 MANAGER INFORMATION:
 ${managerInfo ? `
@@ -88,7 +88,7 @@ COMPANY POLICIES (General):
 - Sick Leave: 12 days per year  
 - Maternity Leave: 180 days
 - Paternity Leave: 15 days
-- Working Hours: 9:00 AM to 6:00 PM (flexible based on individual schedule)
+- Working Hours: 9:00 AM to 5:00 PM (flexible based on individual schedule)
 - Lunch Break: 1 hour
 - Probation Period: 6 months for new employees
 - Notice Period: 30 days for employees, 60 days for managers
