@@ -47,16 +47,16 @@ const AttritionMethodologyCard = () => {
         
         <div className="p-3 bg-white rounded-lg border border-blue-200">
           <p className="text-xs text-blue-800">
-            <strong>AI Model:</strong> Our system uses a specialized Mistral-based attrition prediction model that analyzes employee 
-            profiles including department, designation, tenure, performance ratings, attendance rates, and working patterns. 
-            The model generates probability scores and identifies key risk factors for each employee.
+            <strong>AI-Only Predictions:</strong> Our system exclusively uses a specialized Mistral-based attrition prediction model 
+            that analyzes employee profiles including department, designation, tenure, performance ratings, attendance rates, and working patterns. 
+            The model generates probability scores and identifies key risk factors for each employee using advanced machine learning techniques.
           </p>
         </div>
         
-        <div className="p-3 bg-blue-100 rounded-lg border border-blue-200">
-          <p className="text-xs text-blue-800">
-            <strong>Fallback System:</strong> If AI services are unavailable, our robust rule-based system ensures 
-            continuous prediction capability using performance metrics, attendance patterns, and other key indicators.
+        <div className="p-3 bg-amber-100 rounded-lg border border-amber-200">
+          <p className="text-xs text-amber-800">
+            <strong>Service Requirement:</strong> This feature requires a valid Hugging Face API token. If the AI service is unavailable, 
+            no predictions will be generated to ensure accuracy and reliability.
           </p>
         </div>
       </CardContent>

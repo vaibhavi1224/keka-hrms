@@ -124,7 +124,7 @@ const AttritionPredictor = () => {
   // Run prediction mutation
   const runPredictionMutation = useMutation({
     mutationFn: async (employeeIds: string[]) => {
-      console.log('Running prediction for employees:', employeeIds);
+      console.log('Running AI prediction for employees:', employeeIds);
       
       // Clear old predictions first
       const { error: deleteError } = await supabase
@@ -137,7 +137,7 @@ const AttritionPredictor = () => {
         throw deleteError;
       }
       
-      console.log('Cleared old predictions, now invoking edge function...');
+      console.log('Cleared old predictions, now invoking AI edge function...');
       
       const { data, error } = await supabase.functions.invoke('attrition-predictor', {
         body: { employee_ids: employeeIds }
@@ -153,20 +153,27 @@ const AttritionPredictor = () => {
     },
     onSuccess: (data) => {
       const count = data?.predictions?.length || 0;
-      const aiCount = data?.summary?.ai_predictions || 0;
-      const ruleCount = data?.summary?.rule_based || 0;
+      const failed = data?.failed_predictions?.length || 0;
       
-      toast({
-        title: "Analysis Complete! 🎉",
-        description: `Generated ${count} predictions (${aiCount} AI-powered, ${ruleCount} rule-based)`,
-      });
+      if (count > 0) {
+        toast({
+          title: "AI Analysis Complete! 🤖",
+          description: `Generated ${count} AI predictions${failed > 0 ? `, ${failed} failed` : ''}`,
+        });
+      } else {
+        toast({
+          title: "AI Analysis Failed",
+          description: `No predictions generated. ${failed > 0 ? `${failed} attempts failed.` : 'Please check AI service configuration.'}`,
+          variant: "destructive",
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ['attrition-predictions'] });
     },
     onError: (error) => {
       console.error('Prediction error:', error);
       toast({
-        title: "Prediction Failed",
-        description: "Failed to generate attrition predictions. The AI service may be temporarily unavailable.",
+        title: "AI Prediction Failed",
+        description: "The AI service is currently unavailable. Please ensure your Hugging Face API token is configured.",
         variant: "destructive",
       });
     }
@@ -200,7 +207,7 @@ const AttritionPredictor = () => {
 
   const handleRunForAllEmployees = () => {
     const allEmployeeIds = employees.map(emp => emp.id);
-    console.log('Running prediction for all employees:', allEmployeeIds.length);
+    console.log('Running AI prediction for all employees:', allEmployeeIds.length);
     runPredictionMutation.mutate(allEmployeeIds);
   };
 
@@ -220,7 +227,7 @@ const AttritionPredictor = () => {
       <div className="text-center py-12">
         <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-gray-900 mb-2">No Employees Found</h3>
-        <p className="text-gray-600">Add employees to your system to start using attrition prediction.</p>
+        <p className="text-gray-600">Add employees to your system to start using AI attrition prediction.</p>
       </div>
     );
   }
@@ -260,7 +267,7 @@ const AttritionPredictor = () => {
             ) : (
               <TrendingUp className="w-4 h-4" />
             )}
-            Analyze All Employees ({employees.length})
+            AI Analyze All ({employees.length})
           </Button>
         </div>
       </div>

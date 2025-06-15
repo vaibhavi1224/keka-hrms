@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -26,9 +27,6 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const HIGH_RISK_THRESHOLD = 0.7;
 const MEDIUM_RISK_THRESHOLD = 0.4;
-const LOW_RISK_THRESHOLD = 0.3;
-
-const DEFAULT_CONFIDENCE_SCORE = 0.75;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -36,32 +34,38 @@ serve(async (req) => {
   }
 
   try {
+    if (!huggingFaceToken) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'AI prediction service unavailable', 
+          details: 'Hugging Face API token not configured',
+          timestamp: new Date().toISOString()
+        }),
+        { 
+          status: 503, 
+          headers: {...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     const { employee_ids } = await req.json();
     
-    console.log('🔄 Processing attrition prediction for employees:', employee_ids);
+    console.log('🔄 Processing AI attrition prediction for employees:', employee_ids);
 
     // Fetch employee data from our database
     const employeeData = await fetchEmployeeData(employee_ids);
-    console.log('📊 Employee data fetched:', employeeData.length, 'ecords');
+    console.log('📊 Employee data fetched:', employeeData.length, 'records');
     
     // Process predictions for each employee
     const predictions = [];
+    const failedPredictions = [];
     
     for (const employee of employeeData) {
       try {
-        console.log(`🧠 Processing prediction for employee: ${employee.employee_name}`);
+        console.log(`🧠 Processing AI prediction for employee: ${employee.employee_name}`);
         
-        let prediction;
-        
-        if (huggingFaceToken) {
-          // Use the specific attrition classification model
-          prediction = await callAttritionClassificationModel(employee);
-          console.log(`✅ AI prediction for ${employee.employee_name}: ${prediction.attrition_probability}`);
-        } else {
-          // Fallback to rule-based prediction
-          console.log(`📝 Using rule-based prediction for ${employee.employee_name}`);
-          prediction = generateRuleBasedPrediction(employee);
-        }
+        const prediction = await callAttritionClassificationModel(employee);
+        console.log(`✅ AI prediction for ${employee.employee_name}: ${prediction.attrition_probability}`);
         
         predictions.push({
           employee_id: employee.employee_id,
@@ -70,47 +74,51 @@ serve(async (req) => {
           risk_level: getRiskLevel(prediction.attrition_probability),
           factors: prediction.key_factors || [],
           last_predicted: new Date().toISOString(),
-          prediction_source: huggingFaceToken? 'MISTRAL_ATTRITION_AI' : 'RULE_BASED',
-          confidence: prediction.confidence || DEFAULT_CONFIDENCE_SCORE
+          prediction_source: 'MISTRAL_ATTRITION_AI',
+          confidence: prediction.confidence || 0.90
         });
         
         // Store prediction in database
         await storePrediction(employee.employee_id, prediction.attrition_probability, prediction.key_factors);
         
       } catch (error) {
-        console.error(`❌ Prediction failed for employee ${employee.employee_id}:`, error.message);
-        
-        // Use fallback prediction if AI fails
-        const fallbackPrediction = generateRuleBasedPrediction(employee);
-        predictions.push({
+        console.error(`❌ AI prediction failed for employee ${employee.employee_id}:`, error.message);
+        failedPredictions.push({
           employee_id: employee.employee_id,
           employee_name: employee.employee_name,
-          attrition_risk: fallbackPrediction.attrition_probability,
-          risk_level: getRiskLevel(fallbackPrediction.attrition_probability),
-          factors: fallbackPrediction.key_factors,
-          last_predicted: new Date().toISOString(),
-          prediction_source: 'FALLBACK_RULE_BASED',
-          confidence: DEFAULT_CONFIDENCE_SCORE
+          error: error.message
         });
-        
-        await storePrediction(employee.employee_id, fallbackPrediction.attrition_probability, fallbackPrediction.key_factors);
       }
     }
 
     console.log('📈 Prediction Summary:');
-    console.log(`  - Total predictions: ${predictions.length}`);
-    console.log(`  - AI predictions: ${predictions.filter(p => p.prediction_source.includes('AI')).length}`);
-    console.log(`  - Rule-based predictions: ${predictions.filter(p => p.prediction_source.includes('RULE')).length}`);
+    console.log(`  - Total successful AI predictions: ${predictions.length}`);
+    console.log(`  - Failed predictions: ${failedPredictions.length}`);
 
-    return new Response(JSON.stringify({ 
+    const response = {
       predictions,
+      failed_predictions: failedPredictions,
       summary: {
-        total: predictions.length,
-        ai_predictions: predictions.filter(p => p.prediction_source.includes('AI')).length,
-        rule_based: predictions.filter(p => p.prediction_source.includes('RULE')).length,
+        total_requested: employee_ids.length,
+        successful: predictions.length,
+        failed: failedPredictions.length,
+        ai_predictions: predictions.length,
         success_rate: Math.round((predictions.length / employee_ids.length) * 100)
       }
-    }), {
+    };
+
+    if (predictions.length === 0) {
+      return new Response(JSON.stringify({ 
+        ...response,
+        error: 'No successful predictions generated',
+        message: 'All AI predictions failed. Please check your Hugging Face API configuration.'
+      }), {
+        headers: {...corsHeaders, 'Content-Type': 'application/json' },
+        status: 422
+      });
+    }
+
+    return new Response(JSON.stringify(response), {
       headers: {...corsHeaders, 'Content-Type': 'application/json' },
     });
 
@@ -238,7 +246,7 @@ async function callAttritionClassificationModel(employee: EmployeeAttritionData)
     );
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`Hugging Face API error: ${response.statusText}`);
     }
 
     const result = await response.json();
@@ -313,10 +321,10 @@ function parseClassificationResult(result: any, employee: EmployeeAttritionData)
           // Assume higher scores indicate higher risk
           probability = highestScore;
         }
-      } else if (classificationResults.score!== undefined) {
+      } else if (classificationResults.score !== undefined) {
         probability = classificationResults.score;
       }
-    } else if (result.score!== undefined) {
+    } else if (result.score !== undefined) {
       probability = result.score;
     }
     
@@ -328,8 +336,7 @@ function parseClassificationResult(result: any, employee: EmployeeAttritionData)
     
   } catch (error) {
     console.error('❌ Error parsing classification result:', error);
-    // Fallback to rule-based calculation
-    return generateRuleBasedPrediction(employee).attrition_probability;
+    throw new Error(`Failed to parse AI model result: ${error.message}`);
   }
 }
 
@@ -337,7 +344,7 @@ function extractAIKeyFactors(employee: EmployeeAttritionData, probability: numbe
   const factors = ['AI-powered attrition analysis using Mistral classification model'];
   
   if (modelResult && Array.isArray(modelResult) && modelResult[0]) {
-    const results = Array.isArray(modelResult[0])? modelResult[0] : [modelResult[0]];
+    const results = Array.isArray(modelResult[0]) ? modelResult[0] : [modelResult[0]];
     
     // Extract top prediction labels as insights
     results.slice(0, 2).forEach(result => {
@@ -372,96 +379,6 @@ function extractAIKeyFactors(employee: EmployeeAttritionData, probability: numbe
   return factors;
 }
 
-function generateRuleBasedPrediction(employee: EmployeeAttritionData) {
-  console.log(`📊 Generating rule-based prediction for: ${employee.employee_name}`);
-  
-  let riskScore = 0.3; // Base risk
-  const factors = [];
-  
-  // Performance analysis
-  const avgRating = employee.feedback.length > 0 
-  ? employee.feedback.reduce((sum, f) => sum + (f.rating || 3), 0) / employee.feedback.length 
-    : 3;
-  
-  if (avgRating < 2.5) {
-    riskScore += 0.3;
-    factors.push('Low performance ratings detected');
-  } else if (avgRating > 4.0) {
-    riskScore -= 0.1;
-    factors.push('Excellent performance ratings');
-  }
-  
-  // Attendance analysis
-  if (employee.attendance_data.length > 0) {
-    const attendanceRate = (employee.attendance_data.filter(a => a.status === 'present').length / employee.attendance_data.length) * 100;
-    
-    if (attendanceRate < 80) {
-      riskScore += 0.25;
-      factors.push('Poor attendance record');
-    } else if (attendanceRate > 95) {
-      riskScore -= 0.05;
-      factors.push('Excellent attendance record');
-    }
-    
-    // Working hours analysis
-    const avgWorkingHours = employee.attendance_data.reduce((sum, a) => sum + (a.working_hours || 8), 0) / employee.attendance_data.length;
-    
-    if (avgWorkingHours > 10) {
-      riskScore += 0.2;
-      factors.push('Consistently long working hours (potential burnout)');
-    } else if (avgWorkingHours < 6) {
-      riskScore += 0.15;
-      factors.push('Low engagement - minimal working hours');
-    }
-  }
-  
-  // Tenure analysis
-  if (employee.years_in_company < 1) {
-    riskScore += 0.2;
-    factors.push('New employee - higher attrition risk');
-  } else if (employee.years_in_company > 5) {
-    riskScore -= 0.1;
-    factors.push('Long tenure indicates stability');
-  }
-  
-  // Department-based risk adjustment
-  const highRiskDepartments = ['Sales', 'Customer Service', 'Support'];
-  if (highRiskDepartments.includes(employee.department)) {
-    riskScore += 0.1;
-    factors.push(`${employee.department} department has higher typical turnover`);
-  }
-  
-  // Performance metrics analysis
-  if (employee.performance_metrics.length > 0) {
-    const recentMetrics = employee.performance_metrics.slice(0, 3);
-    const avgPerformance = recentMetrics.reduce((sum, m) => sum + m.metric_value, 0) / recentMetrics.length;
-    
-    if (avgPerformance < 60) {
-      riskScore += 0.2;
-      factors.push('Recent performance metrics below expectations');
-    } else if (avgPerformance > 90) {
-      riskScore -= 0.1;
-      factors.push('Strong recent performance metrics');
-    }
-  } else {
-    factors.push('Limited performance data available');
-  }
-  
-  // Ensure risk score is between 0 and 1
-  riskScore = Math.max(0, Math.min(1, riskScore));
-  
-  // Add general factors
-  factors.push('Analysis based on performance, attendance, and tenure data');
-  
-  console.log(`📊 Rule-based prediction for ${employee.employee_name}: ${Math.round(riskScore * 100)}%`);
-  
-  return {
-    attrition_probability: riskScore,
-    confidence: 0.75,
-    key_factors: factors
-  };
-}
-
 function getRiskLevel(probability: number): string {
   if (probability > HIGH_RISK_THRESHOLD) return 'HIGH';
   if (probability > MEDIUM_RISK_THRESHOLD) return 'MEDIUM';
@@ -479,7 +396,7 @@ async function storePrediction(employeeId: string, attritionRisk: number, keyFac
         attrition_risk: attritionRisk,
         predicted_at: new Date().toISOString(),
         risk_level: getRiskLevel(attritionRisk),
-        model_version: 'istral-attrition-classification-v1',
+        model_version: 'mistral-attrition-classification-v1',
         risk_factors: keyFactors || []
       });
 
