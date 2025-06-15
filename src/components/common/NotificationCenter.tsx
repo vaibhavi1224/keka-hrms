@@ -42,11 +42,18 @@ const NotificationCenter = () => {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          const newNotification = payload.new as Notification;
-          setNotifications(prev => [newNotification, ...prev]);
-          if (!newNotification.read) {
+          const newNotification = payload.new as any;
+          // Ensure type is valid
+          const validNotification: Notification = {
+            ...newNotification,
+            type: ['info', 'success', 'warning', 'error'].includes(newNotification.type) 
+              ? newNotification.type 
+              : 'info'
+          };
+          setNotifications(prev => [validNotification, ...prev]);
+          if (!validNotification.read) {
             setUnreadCount(prev => prev + 1);
-            toast.info(newNotification.title);
+            toast.info(validNotification.title);
           }
         }
       )
@@ -59,9 +66,15 @@ const NotificationCenter = () => {
           filter: `user_id=eq.${user.id}`
         },
         (payload) => {
-          const updatedNotification = payload.new as Notification;
+          const updatedNotification = payload.new as any;
+          const validNotification: Notification = {
+            ...updatedNotification,
+            type: ['info', 'success', 'warning', 'error'].includes(updatedNotification.type) 
+              ? updatedNotification.type 
+              : 'info'
+          };
           setNotifications(prev =>
-            prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
+            prev.map(n => n.id === validNotification.id ? validNotification : n)
           );
         }
       )
@@ -88,8 +101,16 @@ const NotificationCenter = () => {
         return;
       }
 
-      setNotifications(data || []);
-      setUnreadCount(data?.filter(n => !n.read).length || 0);
+      // Transform and validate the data
+      const validNotifications: Notification[] = (data || []).map(item => ({
+        ...item,
+        type: ['info', 'success', 'warning', 'error'].includes(item.type) 
+          ? item.type as 'info' | 'success' | 'warning' | 'error'
+          : 'info'
+      }));
+
+      setNotifications(validNotifications);
+      setUnreadCount(validNotifications.filter(n => !n.read).length);
     } catch (err) {
       console.error('Error in fetchNotifications:', err);
     }

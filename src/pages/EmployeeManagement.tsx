@@ -40,6 +40,16 @@ const EmployeeManagement = () => {
     );
   }
 
+  const handleAddEmployeeSuccess = () => {
+    // Refresh employee list or show success message
+    setActiveTab('employees');
+  };
+
+  const handleAddEmployeeClose = () => {
+    // Close the add employee modal
+    setActiveTab('employees');
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -84,13 +94,16 @@ const EmployeeManagement = () => {
           </TabsList>
 
           <TabsContent value="employees">
-            <EmployeeList userRole={profile?.role || 'employee'} />
+            <EmployeeList />
           </TabsContent>
 
           {isHR && (
             <>
               <TabsContent value="add-employee">
-                <AddEmployee />
+                <AddEmployee 
+                  onClose={handleAddEmployeeClose}
+                  onSuccess={handleAddEmployeeSuccess}
+                />
               </TabsContent>
 
               <TabsContent value="departments">
