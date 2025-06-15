@@ -9,16 +9,16 @@ export async function callGeminiAPI(context: string, message: string, geminiApiK
       contents: [
         {
           parts: [
-            { text: context },
+            { text: `${context}\n\nIMPORTANT: Keep your response SHORT and DIRECT. Maximum 100 words unless specifically asked for details. Be helpful but concise.` },
             { text: `Employee question: ${message}` }
           ]
         }
       ],
       generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1024,
+        temperature: 0.3,
+        topK: 20,
+        topP: 0.8,
+        maxOutputTokens: 300,
       },
       safetySettings: [
         {
