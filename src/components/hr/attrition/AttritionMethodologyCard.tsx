@@ -1,41 +1,55 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Info } from 'lucide-react';
+import { Info, Brain, BarChart3, Users } from 'lucide-react';
 
 const AttritionMethodologyCard = () => {
   return (
-    <Card>
+    <Card className="bg-blue-50 border-blue-200">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Info className="w-5 h-5 text-blue-600" />
-          Advanced AI Prediction Model
+        <CardTitle className="flex items-center gap-2 text-blue-900">
+          <Info className="w-5 h-5" />
+          How Our AI Attrition Prediction Works
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h4 className="font-semibold text-gray-900 mb-2">Mistral AI Model Factors:</h4>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>• Employee satisfaction levels (from feedback ratings)</li>
-              <li>• Performance evaluation scores and trends</li>
-              <li>• Working hours patterns and workload analysis</li>
-              <li>• Tenure and department-specific insights</li>
-              <li>• Salary competitiveness and promotion history</li>
-              <li>• Advanced ML pattern recognition</li>
-            </ul>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex items-start gap-3">
+            <Brain className="w-5 h-5 text-blue-600 mt-1" />
+            <div>
+              <h4 className="font-medium text-blue-900">AI Analysis</h4>
+              <p className="text-sm text-blue-700">
+                Uses Hugging Face AI models to analyze employee patterns and predict attrition likelihood
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 className="font-semibold text-gray-900 mb-2">Risk Classifications:</h4>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>• <span className="text-red-600 font-medium">High Risk</span>: &gt;70% probability of leaving</li>
-              <li>• <span className="text-yellow-600 font-medium">Medium Risk</span>: 40-70% probability</li>
-              <li>• <span className="text-green-600 font-medium">Low Risk</span>: &lt;40% probability</li>
-            </ul>
-            <p className="text-xs text-gray-500 mt-3">
-              Model: robloxguard200/employee_attrition_rate_model_mistral
-            </p>
+          
+          <div className="flex items-start gap-3">
+            <BarChart3 className="w-5 h-5 text-blue-600 mt-1" />
+            <div>
+              <h4 className="font-medium text-blue-900">Data Factors</h4>
+              <p className="text-sm text-blue-700">
+                Analyzes performance metrics, attendance patterns, tenure, and feedback ratings
+              </p>
+            </div>
           </div>
+          
+          <div className="flex items-start gap-3">
+            <Users className="w-5 h-5 text-blue-600 mt-1" />
+            <div>
+              <h4 className="font-medium text-blue-900">Risk Assessment</h4>
+              <p className="text-sm text-blue-700">
+                Provides LOW, MEDIUM, or HIGH risk categorization with actionable insights
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-3 bg-white rounded-lg border border-blue-200">
+          <p className="text-xs text-blue-800">
+            <strong>Note:</strong> Our hybrid approach combines AI predictions with rule-based analysis to ensure accurate results even when AI services are unavailable. 
+            All predictions are generated in real-time using the latest employee data.
+          </p>
         </div>
       </CardContent>
     </Card>

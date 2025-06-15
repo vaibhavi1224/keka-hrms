@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { Brain, RefreshCw, TrendingUp, Trash2 } from 'lucide-react';
+import { Brain, RefreshCw, TrendingUp, Trash2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import AttritionMethodologyCard from './attrition/AttritionMethodologyCard';
@@ -50,7 +50,6 @@ const AttritionPredictor = () => {
     queryFn: async () => {
       console.log('Fetching attrition predictions...');
       
-      // Direct table query to avoid RPC issues
       const { data: predictionData, error } = await supabase
         .from('attrition_predictions')
         .select('employee_id, attrition_risk, risk_level, predicted_at, risk_factors')
@@ -96,7 +95,7 @@ const AttritionPredictor = () => {
       const { error } = await supabase
         .from('attrition_predictions')
         .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // This will match all records
+        .neq('id', '00000000-0000-0000-0000-000000000000');
 
       if (error) {
         console.error('Error clearing predictions:', error);
@@ -110,7 +109,6 @@ const AttritionPredictor = () => {
         title: "Analysis Cleared",
         description: "All previous attrition predictions have been removed.",
       });
-      // Invalidate and refetch the predictions
       queryClient.invalidateQueries({ queryKey: ['attrition-predictions'] });
     },
     onError: (error) => {
@@ -155,18 +153,20 @@ const AttritionPredictor = () => {
     },
     onSuccess: (data) => {
       const count = data?.predictions?.length || 0;
+      const aiCount = data?.summary?.ai_predictions || 0;
+      const ruleCount = data?.summary?.rule_based || 0;
+      
       toast({
-        title: "Analysis Complete",
-        description: `Successfully generated fresh attrition predictions for ${count} employees.`,
+        title: "Analysis Complete! 🎉",
+        description: `Generated ${count} predictions (${aiCount} AI-powered, ${ruleCount} rule-based)`,
       });
-      // Force refresh the predictions data
       queryClient.invalidateQueries({ queryKey: ['attrition-predictions'] });
     },
     onError: (error) => {
       console.error('Prediction error:', error);
       toast({
-        title: "Error",
-        description: "Failed to generate attrition predictions. Please try again.",
+        title: "Prediction Failed",
+        description: "Failed to generate attrition predictions. The AI service may be temporarily unavailable.",
         variant: "destructive",
       });
     }
@@ -204,6 +204,27 @@ const AttritionPredictor = () => {
     runPredictionMutation.mutate(allEmployeeIds);
   };
 
+  if (loadingEmployees) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading employee data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (employees.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No Employees Found</h3>
+        <p className="text-gray-600">Add employees to your system to start using attrition prediction.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -213,7 +234,7 @@ const AttritionPredictor = () => {
             <Brain className="w-6 h-6 text-purple-600" />
             AI Attrition Predictor
           </h2>
-          <p className="text-gray-600 mt-1">Predict which employees are likely to leave using advanced Mistral AI analysis</p>
+          <p className="text-gray-600 mt-1">Predict which employees are likely to leave using advanced AI analysis</p>
         </div>
         <div className="flex gap-2">
           <Button 
@@ -239,7 +260,7 @@ const AttritionPredictor = () => {
             ) : (
               <TrendingUp className="w-4 h-4" />
             )}
-            Analyze All Employees
+            Analyze All Employees ({employees.length})
           </Button>
         </div>
       </div>
