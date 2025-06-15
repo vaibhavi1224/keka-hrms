@@ -315,6 +315,105 @@ export type Database = {
           },
         ]
       }
+      leave_accrual_logs: {
+        Row: {
+          accrual_date: string
+          accrual_reason: string | null
+          accrued_amount: number
+          created_at: string
+          employee_id: string
+          id: string
+          leave_type_id: string
+        }
+        Insert: {
+          accrual_date?: string
+          accrual_reason?: string | null
+          accrued_amount: number
+          created_at?: string
+          employee_id: string
+          id?: string
+          leave_type_id: string
+        }
+        Update: {
+          accrual_date?: string
+          accrual_reason?: string | null
+          accrued_amount?: number
+          created_at?: string
+          employee_id?: string
+          id?: string
+          leave_type_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_accrual_logs_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_accrual_logs_leave_type_id_fkey"
+            columns: ["leave_type_id"]
+            isOneToOne: false
+            referencedRelation: "leave_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_balances: {
+        Row: {
+          accrual_year: number
+          available_balance: number | null
+          created_at: string
+          employee_id: string
+          id: string
+          last_accrued_date: string | null
+          leave_type_id: string
+          total_allocated: number
+          updated_at: string
+          used_leaves: number
+        }
+        Insert: {
+          accrual_year?: number
+          available_balance?: number | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          last_accrued_date?: string | null
+          leave_type_id: string
+          total_allocated?: number
+          updated_at?: string
+          used_leaves?: number
+        }
+        Update: {
+          accrual_year?: number
+          available_balance?: number | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          last_accrued_date?: string | null
+          leave_type_id?: string
+          total_allocated?: number
+          updated_at?: string
+          used_leaves?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_balances_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_balances_leave_type_id_fkey"
+            columns: ["leave_type_id"]
+            isOneToOne: false
+            referencedRelation: "leave_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leave_requests: {
         Row: {
           approved_at: string | null
@@ -324,6 +423,7 @@ export type Database = {
           end_date: string
           id: string
           leave_type: string
+          leave_type_id: string | null
           reason: string | null
           rejection_reason: string | null
           start_date: string
@@ -339,6 +439,7 @@ export type Database = {
           end_date: string
           id?: string
           leave_type: string
+          leave_type_id?: string | null
           reason?: string | null
           rejection_reason?: string | null
           start_date: string
@@ -354,6 +455,7 @@ export type Database = {
           end_date?: string
           id?: string
           leave_type?: string
+          leave_type_id?: string | null
           reason?: string | null
           rejection_reason?: string | null
           start_date?: string
@@ -370,8 +472,65 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "leave_requests_leave_type_id_fkey"
+            columns: ["leave_type_id"]
+            isOneToOne: false
+            referencedRelation: "leave_types"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "leave_requests_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_types: {
+        Row: {
+          accrual_rate: number
+          carry_forward: boolean
+          created_at: string
+          created_by: string | null
+          description: string | null
+          encashable: boolean
+          id: string
+          is_active: boolean
+          max_leaves_per_year: number
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          accrual_rate?: number
+          carry_forward?: boolean
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          encashable?: boolean
+          id?: string
+          is_active?: boolean
+          max_leaves_per_year?: number
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          accrual_rate?: number
+          carry_forward?: boolean
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          encashable?: boolean
+          id?: string
+          is_active?: boolean
+          max_leaves_per_year?: number
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_types_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1133,6 +1292,10 @@ export type Database = {
       is_manager_or_hr: {
         Args: { user_uuid: string }
         Returns: boolean
+      }
+      process_monthly_leave_accrual: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {

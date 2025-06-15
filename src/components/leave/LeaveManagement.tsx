@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Calendar, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,9 @@ import LeaveRequestCard from './LeaveRequestCard';
 import LeaveCalendar from './LeaveCalendar';
 import LeavePolicies from './LeavePolicies';
 import ApplyLeaveModal from './ApplyLeaveModal';
+import LeaveBalances from './LeaveBalances';
+import LeaveTypesManager from './LeaveTypesManager';
+import AccrualManager from './AccrualManager';
 
 const LeaveManagement = () => {
   const [selectedTab, setSelectedTab] = useState('requests');
@@ -29,7 +33,8 @@ const LeaveManagement = () => {
         .select(`
           *,
           profiles!leave_requests_user_id_fkey(first_name, last_name, employee_id),
-          approved_by_profile:profiles!leave_requests_approved_by_fkey(first_name, last_name)
+          approved_by_profile:profiles!leave_requests_approved_by_fkey(first_name, last_name),
+          leave_types(name, description)
         `)
         .order('created_at', { ascending: false });
 
@@ -60,6 +65,7 @@ const LeaveManagement = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leave-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['leave-balances'] });
       toast.success('Leave request approved successfully');
     },
     onError: (error) => {
@@ -114,6 +120,17 @@ const LeaveManagement = () => {
     );
   }
 
+  const tabs = [
+    { id: 'requests', label: canManageRequests ? 'Leave Requests' : 'My Leave History' },
+    { id: 'balances', label: 'Leave Balances' },
+    { id: 'calendar', label: 'Leave Calendar' },
+    { id: 'policies', label: 'Leave Policies' },
+    ...(profile?.role === 'hr' ? [
+      { id: 'types', label: 'Manage Types' },
+      { id: 'accrual', label: 'Accrual Management' }
+    ] : [])
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -136,12 +153,8 @@ const LeaveManagement = () => {
 
       <LeaveStats stats={stats} canManageRequests={canManageRequests} />
 
-      <div className="flex space-x-1 mb-6">
-        {[
-          { id: 'requests', label: canManageRequests ? 'Leave Requests' : 'My Leave History' },
-          { id: 'calendar', label: 'Leave Calendar' },
-          { id: 'policies', label: 'Leave Policies' }
-        ].map((tab) => (
+      <div className="flex flex-wrap gap-1 mb-6">
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setSelectedTab(tab.id)}
@@ -191,9 +204,11 @@ const LeaveManagement = () => {
         </Card>
       )}
 
+      {selectedTab === 'balances' && <LeaveBalances />}
       {selectedTab === 'calendar' && <LeaveCalendar />}
-
       {selectedTab === 'policies' && <LeavePolicies />}
+      {selectedTab === 'types' && <LeaveTypesManager />}
+      {selectedTab === 'accrual' && <AccrualManager />}
 
       <ApplyLeaveModal 
         isOpen={isApplyModalOpen} 
