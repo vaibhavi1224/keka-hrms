@@ -17,6 +17,7 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string>('');
+  const [isStarting, setIsStarting] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
@@ -65,6 +66,9 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
   }, []);
 
   const startCamera = useCallback(async () => {
+    console.log('Start camera button clicked');
+    setIsStarting(true);
+    
     try {
       console.log('Starting camera...');
       setCameraError(null);
@@ -119,6 +123,8 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
         description: errorMessage,
         variant: "destructive"
       });
+    } finally {
+      setIsStarting(false);
     }
   }, [toast]);
 
@@ -218,6 +224,11 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
     onSuccess();
   };
 
+  const handleStartCameraClick = () => {
+    console.log('Start camera button clicked - handler triggered');
+    startCamera();
+  };
+
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
@@ -239,9 +250,13 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
               <p className="text-sm text-red-700">{cameraError}</p>
             </div>
             <div className="space-y-2">
-              <Button onClick={startCamera} className="w-full">
+              <Button 
+                onClick={handleStartCameraClick} 
+                className="w-full"
+                disabled={isStarting}
+              >
                 <RotateCcw className="w-4 h-4 mr-2" />
-                Try Camera Again
+                {isStarting ? 'Trying...' : 'Try Camera Again'}
               </Button>
               <Button variant="outline" onClick={proceedWithoutVerification} className="w-full">
                 Continue Without Face Verification
@@ -257,9 +272,13 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
               </p>
             </div>
             <div className="space-y-2">
-              <Button onClick={startCamera} className="w-full">
+              <Button 
+                onClick={handleStartCameraClick} 
+                className="w-full"
+                disabled={isStarting}
+              >
                 <Camera className="w-4 h-4 mr-2" />
-                Start Face Verification
+                {isStarting ? 'Starting Camera...' : 'Start Face Verification'}
               </Button>
               <Button variant="outline" onClick={proceedWithoutVerification} className="w-full">
                 Skip Face Verification
