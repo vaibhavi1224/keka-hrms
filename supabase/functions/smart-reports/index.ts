@@ -15,6 +15,8 @@ const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 serve(async (req) => {
+  console.log('🚀 Smart Reports function called');
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -22,7 +24,7 @@ serve(async (req) => {
   try {
     const { reportType, employeeId, departmentId, startDate, endDate } = await req.json();
     
-    console.log('📊 Generating smart report:', reportType);
+    console.log('📊 Generating smart report:', { reportType, employeeId, departmentId, startDate, endDate });
 
     let reportData;
     
@@ -32,9 +34,15 @@ serve(async (req) => {
       reportData = await generateTeamTrendsReport(departmentId, startDate, endDate);
     } else if (reportType === 'department_overview') {
       reportData = await generateDepartmentOverviewReport(departmentId, startDate, endDate);
+    } else {
+      throw new Error(`Unknown report type: ${reportType}`);
     }
 
+    console.log('📈 Report data generated:', reportData);
+
     const aiSummary = await generateAISummary(reportData, reportType);
+
+    console.log('🤖 AI summary generated');
 
     return new Response(JSON.stringify({
       success: true,
@@ -63,12 +71,19 @@ serve(async (req) => {
 });
 
 async function generateEmployeePerformanceReport(employeeId: string, startDate: string, endDate: string) {
+  console.log('👤 Generating employee performance report for:', employeeId);
+  
   // Get employee details
-  const { data: employee } = await supabase
+  const { data: employee, error: empError } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', employeeId)
     .single();
+
+  if (empError) {
+    console.error('Error fetching employee:', empError);
+    throw new Error(`Failed to fetch employee: ${empError.message}`);
+  }
 
   // Get performance metrics
   const { data: metrics } = await supabase
@@ -96,8 +111,12 @@ async function generateEmployeePerformanceReport(employeeId: string, startDate: 
     .lte('review_period_end', endDate);
 
   // Calculate key metrics
-  const avgPerformance = metrics?.reduce((sum, m) => sum + (m.metric_value / 20), 0) / (metrics?.length || 1);
-  const attendanceRate = attendance?.filter(a => a.status === 'present').length / (attendance?.length || 1) * 100;
+  const avgPerformance = metrics?.length > 0 
+    ? metrics.reduce((sum, m) => sum + (m.metric_value / 20), 0) / metrics.length 
+    : 0;
+  const attendanceRate = attendance?.length > 0 
+    ? attendance.filter(a => a.status === 'present').length / attendance.length * 100 
+    : 0;
 
   return {
     type: 'employee_performance',
@@ -117,6 +136,8 @@ async function generateEmployeePerformanceReport(employeeId: string, startDate: 
 }
 
 async function generateTeamTrendsReport(departmentId: string, startDate: string, endDate: string) {
+  console.log('👥 Generating team trends report for department:', departmentId);
+  
   // Get team members
   const { data: teamMembers } = await supabase
     .from('profiles')
@@ -125,7 +146,7 @@ async function generateTeamTrendsReport(departmentId: string, startDate: string,
     .eq('is_active', true);
 
   if (!teamMembers?.length) {
-    throw new Error('No team members found');
+    throw new Error('No team members found for this department');
   }
 
   const memberIds = teamMembers.map(m => m.id);
@@ -147,8 +168,12 @@ async function generateTeamTrendsReport(departmentId: string, startDate: string,
     .lte('date', endDate);
 
   // Calculate team trends
-  const avgTeamPerformance = teamMetrics?.reduce((sum, m) => sum + (m.metric_value / 20), 0) / (teamMetrics?.length || 1);
-  const teamAttendanceRate = teamAttendance?.filter(a => a.status === 'present').length / (teamAttendance?.length || 1) * 100;
+  const avgTeamPerformance = teamMetrics?.length > 0
+    ? teamMetrics.reduce((sum, m) => sum + (m.metric_value / 20), 0) / teamMetrics.length
+    : 0;
+  const teamAttendanceRate = teamAttendance?.length > 0
+    ? teamAttendance.filter(a => a.status === 'present').length / teamAttendance.length * 100
+    : 0;
 
   return {
     type: 'team_trends',
@@ -168,6 +193,8 @@ async function generateTeamTrendsReport(departmentId: string, startDate: string,
 }
 
 async function generateDepartmentOverviewReport(departmentId: string, startDate: string, endDate: string) {
+  console.log('🏢 Generating department overview for:', departmentId);
+  
   // Get department summary data
   const { data: deptEmployees } = await supabase
     .from('profiles')
@@ -184,13 +211,17 @@ async function generateDepartmentOverviewReport(departmentId: string, startDate:
 }
 
 async function generateAISummary(reportData: any, reportType: string) {
+  console.log('🤖 Generating AI summary with Gemini API');
+  
   if (!geminiApiKey) {
+    console.log('⚠️ No Gemini API key found, using rule-based summary');
     return generateRuleBasedSummary(reportData, reportType);
   }
 
   const prompt = createReportPrompt(reportData, reportType);
   
   try {
+    console.log('📡 Calling Gemini API...');
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
@@ -212,13 +243,15 @@ async function generateAISummary(reportData: any, reportType: string) {
     });
 
     if (!response.ok) {
+      console.error('Gemini API response not ok:', response.status, response.statusText);
       throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log('✅ Gemini API response received');
     return data.candidates[0].content.parts[0].text;
   } catch (error) {
-    console.error('AI summary generation failed, using rule-based:', error);
+    console.error('❌ AI summary generation failed, using rule-based:', error);
     return generateRuleBasedSummary(reportData, reportType);
   }
 }
