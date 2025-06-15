@@ -53,6 +53,24 @@ export const useCameraCapture = () => {
     checkCameraSupport();
   }, []);
 
+  // Effect to connect stream to video element when both are available
+  useEffect(() => {
+    if (stream && videoRef.current && isCapturing) {
+      console.log('Connecting stream to video element');
+      videoRef.current.srcObject = stream;
+      
+      videoRef.current.onloadedmetadata = () => {
+        console.log('Video metadata loaded, video should be playing');
+        setDebugInfo('Camera ready and playing');
+      };
+      
+      // Ensure video plays
+      videoRef.current.play().catch(error => {
+        console.error('Error playing video:', error);
+      });
+    }
+  }, [stream, isCapturing]);
+
   const startCamera = useCallback(async () => {
     console.log('Start camera function called, current isCapturing:', isCapturing);
     setIsStarting(true);
@@ -70,31 +88,11 @@ export const useCameraCapture = () => {
         }
       });
       
-      console.log('Camera stream obtained, setting up video element...');
+      console.log('Camera stream obtained');
       setDebugInfo('Camera access granted');
+      setStream(mediaStream);
+      setIsCapturing(true);
       
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        setStream(mediaStream);
-        
-        // Set isCapturing immediately when stream is obtained
-        console.log('Setting isCapturing to true immediately');
-        setIsCapturing(true);
-        setDebugInfo('Camera ready');
-        
-        // Also set up the metadata event handler as backup
-        videoRef.current.onloadedmetadata = () => {
-          console.log('Video metadata loaded - confirming isCapturing state');
-          setIsCapturing(true);
-          setDebugInfo('Camera ready (metadata loaded)');
-        };
-      } else {
-        // If videoRef is not available, still set the stream and state
-        console.log('Video ref not available, but setting stream and isCapturing');
-        setStream(mediaStream);
-        setIsCapturing(true);
-        setDebugInfo('Camera ready (no video ref)');
-      }
     } catch (error: any) {
       console.error('Error accessing camera:', error);
       let errorMessage = 'Unable to access camera. ';
