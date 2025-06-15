@@ -35,8 +35,8 @@ const HRChat = () => {
               <h3 className="font-semibold text-gray-900 mb-2">Contact HR</h3>
               <div className="space-y-2 text-sm text-gray-700">
                 <p>Email: hr@company.com</p>
-                <p>Phone: +91 XXX XXX XXXX</p>
-                <p>Office Hours: 9 AM - 6 PM</p>
+                <p>Phone: +91 88 7777 9999</p>
+                <p>Office Hours: 9 AM - 5 PM</p>
               </div>
             </div>
           </div>
