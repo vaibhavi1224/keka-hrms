@@ -1,3 +1,4 @@
+
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
@@ -6,14 +7,14 @@ import {
   createBrowserRouter,
   RouterProvider,
 } from "react-router-dom";
-import Login from './pages/Login.tsx';
-import Register from './pages/Register.tsx';
-import Dashboard from './pages/Dashboard.tsx';
-import ProtectedRoute from './components/ProtectedRoute.tsx';
-import Attendance from './pages/Attendance.tsx';
-import Leave from './pages/Leave.tsx';
-import Payroll from './pages/Payroll.tsx';
-import Reports from './pages/Reports.tsx';
+import Login from './components/auth/Login.tsx';
+import Register from './components/auth/Register.tsx';
+import Dashboard from './components/dashboard/Dashboard.tsx';
+import ProtectedRoute from './components/auth/ProtectedRoute.tsx';
+import Attendance from './components/attendance/AttendanceTracker.tsx';
+import Leave from './components/leave/LeaveManagement.tsx';
+import Payroll from './components/payroll/PayrollDashboard.tsx';
+import Reports from './components/reports/ReportsAnalyticsDashboard.tsx';
 import AnomalyDetection from './pages/AnomalyDetection';
 
 const router = createBrowserRouter([
