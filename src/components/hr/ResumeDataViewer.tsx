@@ -41,7 +41,7 @@ interface ResumeData {
   };
   processed_at: string;
   status: string;
-  profiles?: {
+  employee_profile?: {
     first_name: string;
     last_name: string;
     email: string;
@@ -55,25 +55,39 @@ const ResumeDataViewer = () => {
     queryKey: ['resume-data'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('resume_data' as any)
-        .select(`
-          *,
-          profiles!inner(first_name, last_name, email)
-        `)
+        .from('resume_data')
+        .select('*')
         .order('processed_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching resume data:', error);
         throw error;
       }
-      return (data || []) as ResumeData[];
+
+      // Fetch employee profiles separately
+      const resumeDataWithProfiles = await Promise.all(
+        (data || []).map(async (resume) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name, email')
+            .eq('id', resume.employee_id)
+            .single();
+
+          return {
+            ...resume,
+            employee_profile: profile
+          } as ResumeData;
+        })
+      );
+
+      return resumeDataWithProfiles;
     }
   });
 
   const updateProfileMutation = useMutation({
     mutationFn: async ({ employeeId, resumeId }: { employeeId: string, resumeId: string }) => {
       const { error } = await supabase
-        .from('resume_data' as any)
+        .from('resume_data')
         .update({ status: 'reviewed' })
         .eq('id', resumeId);
 
@@ -123,9 +137,9 @@ const ResumeDataViewer = () => {
                   <User className="w-6 h-6 text-blue-600" />
                   <div>
                     <h3 className="text-lg font-semibold">
-                      {resume.profiles?.first_name} {resume.profiles?.last_name}
+                      {resume.employee_profile?.first_name} {resume.employee_profile?.last_name}
                     </h3>
-                    <p className="text-sm text-gray-600">{resume.profiles?.email}</p>
+                    <p className="text-sm text-gray-600">{resume.employee_profile?.email}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
