@@ -50,7 +50,7 @@ export const useCameraCapture = () => {
       }
     };
 
-    checkCameraSupture();
+    checkCameraSupport();
   }, []);
 
   const startCamera = useCallback(async () => {
