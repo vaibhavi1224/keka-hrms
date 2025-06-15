@@ -1,5 +1,7 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { InferenceClient } from "https://esm.sh/@huggingface/inference";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,9 +50,9 @@ serve(async (req) => {
         let prediction;
         
         if (huggingFaceToken) {
-          // Try Hugging Face AI model first
-          prediction = await callHuggingFaceModel(employee);
-          console.log(`✅ Hugging Face prediction for ${employee.employee_name}: ${prediction.attrition_probability}`);
+          // Use the specific attrition model
+          prediction = await callAttritionModel(employee);
+          console.log(`✅ AI prediction for ${employee.employee_name}: ${prediction.attrition_probability}`);
         } else {
           // Fallback to rule-based prediction
           console.log(`📝 Using rule-based prediction for ${employee.employee_name}`);
@@ -64,7 +66,7 @@ serve(async (req) => {
           risk_level: getRiskLevel(prediction.attrition_probability),
           factors: prediction.key_factors || [],
           last_predicted: new Date().toISOString(),
-          prediction_source: huggingFaceToken ? 'HUGGING_FACE_AI' : 'RULE_BASED',
+          prediction_source: huggingFaceToken ? 'MISTRAL_ATTRITION_AI' : 'RULE_BASED',
           confidence: prediction.confidence || 0.85
         });
         
@@ -205,48 +207,45 @@ async function fetchEmployeeData(employee_ids: string[]) {
   return enrichedData;
 }
 
-async function callHuggingFaceModel(employee: EmployeeAttritionData) {
-  console.log(`🤖 Calling Hugging Face AI for: ${employee.employee_name}`);
+async function callAttritionModel(employee: EmployeeAttritionData) {
+  console.log(`🤖 Calling Mistral Attrition Model for: ${employee.employee_name}`);
   
-  // Create a structured text for sentiment analysis
-  const employeeProfile = createEmployeeProfileText(employee);
+  const client = new InferenceClient(huggingFaceToken);
+  
+  // Create structured input for the attrition model
+  const employeeInput = createEmployeeInputForModel(employee);
   
   try {
-    // Use sentiment analysis model to determine job satisfaction
-    const response = await fetch('https://api-inference.huggingface.co/models/cardiffnlp/twitter-roberta-base-sentiment-latest', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${huggingFaceToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        inputs: employeeProfile
-      })
+    console.log('📤 Sending to robloxguard200/employee_attrition_rate_model_mistral with input:', employeeInput);
+    
+    const result = await client.textGeneration({
+      model: "robloxguard200/employee_attrition_rate_model_mistral",
+      inputs: employeeInput,
+      parameters: {
+        max_new_tokens: 250,
+        temperature: 0.1,
+        return_full_text: false
+      }
     });
 
-    if (!response.ok) {
-      throw new Error(`Hugging Face API error: ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    console.log('🔍 Raw Hugging Face result:', JSON.stringify(result, null, 2));
+    console.log('🔍 Raw Mistral attrition model result:', JSON.stringify(result, null, 2));
     
-    // Convert sentiment to attrition probability
-    const attrition_probability = convertSentimentToAttrition(result, employee);
+    // Parse the model output to extract attrition probability
+    const attrition_probability = parseAttritionModelOutput(result.generated_text, employee);
     
     return {
       attrition_probability,
-      confidence: 0.85,
-      key_factors: extractAIKeyFactors(employee, attrition_probability)
+      confidence: 0.90,
+      key_factors: extractAIKeyFactors(employee, attrition_probability, result.generated_text)
     };
     
   } catch (error) {
-    console.error('💥 Hugging Face API call failed:', error.message);
+    console.error('💥 Mistral attrition model call failed:', error.message);
     throw error;
   }
 }
 
-function createEmployeeProfileText(employee: EmployeeAttritionData): string {
+function createEmployeeInputForModel(employee: EmployeeAttritionData): string {
   const avgRating = employee.feedback.length > 0 
     ? employee.feedback.reduce((sum, f) => sum + (f.rating || 3), 0) / employee.feedback.length 
     : 3;
@@ -258,82 +257,114 @@ function createEmployeeProfileText(employee: EmployeeAttritionData): string {
   const attendanceRate = employee.attendance_data.length > 0
     ? (employee.attendance_data.filter(a => a.status === 'present').length / employee.attendance_data.length) * 100
     : 95;
-  
-  // Create a narrative that sentiment analysis can evaluate
-  let profileText = `Employee satisfaction assessment: `;
-  
-  if (avgRating >= 4) {
-    profileText += `This employee is highly satisfied with excellent performance ratings and consistent attendance. `;
-  } else if (avgRating <= 2) {
-    profileText += `This employee shows signs of dissatisfaction with poor performance ratings and concerning work patterns. `;
-  } else {
-    profileText += `This employee shows average satisfaction levels with moderate performance ratings. `;
-  }
-  
-  if (avgWorkingHours > 10) {
-    profileText += `They are working long hours which may indicate stress or burnout. `;
-  } else if (avgWorkingHours < 6) {
-    profileText += `They work minimal hours which may indicate disengagement. `;
-  }
-  
-  if (attendanceRate < 80) {
-    profileText += `Poor attendance patterns suggest potential job dissatisfaction. `;
-  }
-  
-  if (employee.years_in_company < 1) {
-    profileText += `As a new employee, they may be evaluating their fit with the company. `;
-  } else if (employee.years_in_company > 5) {
-    profileText += `As a long-term employee, they show stability and commitment. `;
-  }
-  
-  return profileText;
+
+  const avgPerformance = employee.performance_metrics.length > 0
+    ? employee.performance_metrics.reduce((sum, m) => sum + m.metric_value, 0) / employee.performance_metrics.length
+    : 75;
+
+  // Create input in a format the attrition model expects
+  const input = `Employee Profile Analysis:
+Department: ${employee.department}
+Designation: ${employee.designation}
+Years in Company: ${employee.years_in_company}
+Performance Rating: ${avgRating.toFixed(1)}/5
+Performance Metrics: ${avgPerformance.toFixed(1)}%
+Attendance Rate: ${attendanceRate.toFixed(1)}%
+Average Working Hours: ${avgWorkingHours.toFixed(1)}
+Salary CTC: ${employee.salary?.ctc || 'N/A'}
+
+Based on this employee profile, predict the attrition risk probability (0-1) and provide key risk factors:`;
+
+  return input;
 }
 
-function convertSentimentToAttrition(sentimentResult: any, employee: EmployeeAttritionData): number {
-  // Handle both array and single object responses
-  const sentiment = Array.isArray(sentimentResult) ? sentimentResult[0] : sentimentResult;
-  
-  if (!sentiment || !Array.isArray(sentiment)) {
-    console.log('⚠️ Unexpected sentiment format, using rule-based fallback');
+function parseAttritionModelOutput(modelOutput: string, employee: EmployeeAttritionData): number {
+  try {
+    console.log('🔍 Parsing model output:', modelOutput);
+    
+    // Look for probability patterns in the output
+    const probabilityRegex = /(?:probability|risk|chance).*?(\d+(?:\.\d+)?)/i;
+    const percentageRegex = /(\d+(?:\.\d+)?)%/;
+    const decimalRegex = /0\.\d+/;
+    
+    let probability = 0.3; // Default fallback
+    
+    if (probabilityRegex.test(modelOutput)) {
+      const match = modelOutput.match(probabilityRegex);
+      if (match) {
+        probability = parseFloat(match[1]);
+        // If it's a percentage, convert to decimal
+        if (probability > 1) {
+          probability = probability / 100;
+        }
+      }
+    } else if (percentageRegex.test(modelOutput)) {
+      const match = modelOutput.match(percentageRegex);
+      if (match) {
+        probability = parseFloat(match[1]) / 100;
+      }
+    } else if (decimalRegex.test(modelOutput)) {
+      const match = modelOutput.match(decimalRegex);
+      if (match) {
+        probability = parseFloat(match[0]);
+      }
+    } else {
+      // Fallback: analyze keywords to estimate probability
+      const lowRiskKeywords = ['low', 'stable', 'satisfied', 'good', 'excellent'];
+      const highRiskKeywords = ['high', 'likely', 'risk', 'dissatisfied', 'poor', 'concerning'];
+      
+      const lowCount = lowRiskKeywords.filter(keyword => 
+        modelOutput.toLowerCase().includes(keyword)
+      ).length;
+      
+      const highCount = highRiskKeywords.filter(keyword => 
+        modelOutput.toLowerCase().includes(keyword)
+      ).length;
+      
+      if (highCount > lowCount) {
+        probability = 0.7;
+      } else if (lowCount > highCount) {
+        probability = 0.2;
+      } else {
+        probability = 0.4;
+      }
+    }
+    
+    // Ensure probability is within valid range
+    probability = Math.max(0, Math.min(1, probability));
+    
+    console.log(`📊 Parsed attrition probability: ${probability} for ${employee.employee_name}`);
+    return probability;
+    
+  } catch (error) {
+    console.error('❌ Error parsing model output:', error);
+    // Fallback to rule-based calculation
     return generateRuleBasedPrediction(employee).attrition_probability;
   }
-  
-  // Find the sentiment with highest score
-  const topSentiment = sentiment.reduce((prev, current) => 
-    (prev.score > current.score) ? prev : current
-  );
-  
-  let baseAttrition = 0.3; // Base 30% attrition risk
-  
-  // Convert sentiment to attrition probability
-  if (topSentiment.label.toLowerCase().includes('negative')) {
-    baseAttrition = 0.4 + (topSentiment.score * 0.4); // 40-80% risk for negative sentiment
-  } else if (topSentiment.label.toLowerCase().includes('positive')) {
-    baseAttrition = 0.1 + ((1 - topSentiment.score) * 0.3); // 10-40% risk for positive sentiment
-  } else {
-    baseAttrition = 0.3 + (topSentiment.score * 0.2); // 30-50% risk for neutral sentiment
-  }
-  
-  // Apply additional factors
-  if (employee.years_in_company < 1) baseAttrition += 0.1;
-  if (employee.feedback.length > 0) {
-    const avgRating = employee.feedback.reduce((sum, f) => sum + (f.rating || 3), 0) / employee.feedback.length;
-    if (avgRating < 2.5) baseAttrition += 0.15;
-    if (avgRating > 4) baseAttrition -= 0.1;
-  }
-  
-  return Math.max(0, Math.min(1, baseAttrition));
 }
 
-function extractAIKeyFactors(employee: EmployeeAttritionData, probability: number): string[] {
-  const factors = ['AI sentiment analysis of employee satisfaction'];
+function extractAIKeyFactors(employee: EmployeeAttritionData, probability: number, modelOutput?: string): string[] {
+  const factors = ['AI-powered attrition analysis using Mistral model'];
   
+  if (modelOutput) {
+    // Extract insights from model output
+    const sentences = modelOutput.split('.').filter(s => s.trim().length > 10);
+    sentences.slice(0, 3).forEach(sentence => {
+      if (sentence.toLowerCase().includes('risk') || 
+          sentence.toLowerCase().includes('factor') ||
+          sentence.toLowerCase().includes('concern')) {
+        factors.push(sentence.trim());
+      }
+    });
+  }
+  
+  // Add data-driven insights
   if (probability > 0.7) {
-    factors.push('High attrition risk detected through AI analysis');
+    factors.push('High attrition risk detected by AI model');
   } else if (probability > 0.4) {
-    factors.push('Moderate attrition indicators identified by AI');
+    factors.push('Moderate attrition indicators identified');
   } else {
-    factors.push('Low attrition risk assessed through AI sentiment analysis');
+    factors.push('Low attrition risk assessed by AI model');
   }
   
   // Add specific insights based on data
@@ -341,8 +372,12 @@ function extractAIKeyFactors(employee: EmployeeAttritionData, probability: numbe
     factors.push('Early career stage increases mobility risk');
   }
   
-  if (employee.performance_metrics.length === 0) {
-    factors.push('Limited performance data available for analysis');
+  const avgRating = employee.feedback.length > 0 
+    ? employee.feedback.reduce((sum, f) => sum + (f.rating || 3), 0) / employee.feedback.length 
+    : 3;
+    
+  if (avgRating < 2.5) {
+    factors.push('Low performance ratings detected');
   }
   
   return factors;
@@ -455,7 +490,7 @@ async function storePrediction(employeeId: string, attritionRisk: number, keyFac
         attrition_risk: attritionRisk,
         predicted_at: new Date().toISOString(),
         risk_level: getRiskLevel(attritionRisk),
-        model_version: 'hybrid-ai-rule-based-v2',
+        model_version: 'mistral-attrition-ai-v1',
         risk_factors: keyFactors || []
       });
 

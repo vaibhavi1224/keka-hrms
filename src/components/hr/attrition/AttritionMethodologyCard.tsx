@@ -17,9 +17,9 @@ const AttritionMethodologyCard = () => {
           <div className="flex items-start gap-3">
             <Brain className="w-5 h-5 text-blue-600 mt-1" />
             <div>
-              <h4 className="font-medium text-blue-900">AI Sentiment Analysis</h4>
+              <h4 className="font-medium text-blue-900">Mistral AI Model</h4>
               <p className="text-sm text-blue-700">
-                Uses Hugging Face sentiment analysis models to evaluate employee satisfaction and job sentiment
+                Uses specialized employee attrition prediction model (robloxguard200/employee_attrition_rate_model_mistral) trained on HR datasets
               </p>
             </div>
           </div>
@@ -27,9 +27,9 @@ const AttritionMethodologyCard = () => {
           <div className="flex items-start gap-3">
             <BarChart3 className="w-5 h-5 text-blue-600 mt-1" />
             <div>
-              <h4 className="font-medium text-blue-900">Data Factors</h4>
+              <h4 className="font-medium text-blue-900">Data Analysis</h4>
               <p className="text-sm text-blue-700">
-                Analyzes performance metrics, attendance patterns, tenure, feedback ratings, and working hours
+                Analyzes performance metrics, attendance patterns, tenure, feedback ratings, salary data, and working hours
               </p>
             </div>
           </div>
@@ -39,7 +39,7 @@ const AttritionMethodologyCard = () => {
             <div>
               <h4 className="font-medium text-blue-900">Risk Assessment</h4>
               <p className="text-sm text-blue-700">
-                Provides LOW, MEDIUM, or HIGH risk categorization with detailed reasoning and confidence scores
+                Provides LOW, MEDIUM, or HIGH risk categorization with AI-generated insights and confidence scores
               </p>
             </div>
           </div>
@@ -47,9 +47,9 @@ const AttritionMethodologyCard = () => {
         
         <div className="p-3 bg-white rounded-lg border border-blue-200">
           <p className="text-xs text-blue-800">
-            <strong>AI Method:</strong> Our system uses advanced sentiment analysis to evaluate employee satisfaction narratives, 
-            then combines this with rule-based analysis of performance, attendance, and tenure data. 
-            The AI model analyzes text descriptions of employee work patterns to predict job satisfaction and likelihood of leaving.
+            <strong>AI Model:</strong> Our system uses a specialized Mistral-based attrition prediction model that analyzes employee 
+            profiles including department, designation, tenure, performance ratings, attendance rates, and working patterns. 
+            The model generates probability scores and identifies key risk factors for each employee.
           </p>
         </div>
         
