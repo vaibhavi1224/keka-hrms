@@ -179,38 +179,43 @@ export async function seedCompanyData() {
 
     for (const employee of companyData) {
       try {
-        // Check if invitation already exists
-        const { data: existingInvitation } = await supabase
-          .from('invitations')
+        // Check if employee profile already exists
+        const { data: existingProfile } = await supabase
+          .from('profiles')
           .select('id')
           .eq('email', employee.email)
           .single();
 
-        if (existingInvitation) {
-          console.log(`Invitation already exists for ${employee.email}, skipping...`);
+        if (existingProfile) {
+          console.log(`Employee already exists for ${employee.email}, skipping...`);
           continue;
         }
 
-        // Create invitation
-        const { error: inviteError } = await supabase
-          .from('invitations')
-          .insert({
-            email: employee.email,
+        // Generate a temporary password for the employee
+        const tempPassword = Math.random().toString(36).slice(-8) + 'Temp123!';
+
+        // Create employee using the edge function
+        const { data, error } = await supabase.functions.invoke('create-employee', {
+          body: {
             name: employee.name,
+            email: employee.email,
+            password: tempPassword,
             role: employee.role,
             department: employee.department,
             designation: employee.designation,
             salary: employee.salary,
-            date_of_joining: new Date().toISOString().split('T')[0],
-            invited_by: user.id,
-            status: 'INVITED'
-          });
+            date_of_joining: new Date().toISOString().split('T')[0]
+          }
+        });
 
-        if (inviteError) {
-          console.error(`Error inviting ${employee.email}:`, inviteError);
+        if (error) {
+          console.error(`Error creating employee ${employee.email}:`, error);
+          errorCount++;
+        } else if (data.error) {
+          console.error(`Error creating employee ${employee.email}:`, data.error);
           errorCount++;
         } else {
-          console.log(`Successfully invited ${employee.email}`);
+          console.log(`Successfully created employee ${employee.email}`);
           successCount++;
         }
       } catch (error) {
