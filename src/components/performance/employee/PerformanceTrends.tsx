@@ -28,7 +28,7 @@ const PerformanceTrends = () => {
       
       return (data || []).map(item => ({
         cycle: item.review_cycle?.name || 'Unknown',
-        rating: parseFloat(item.final_rating || '0'),
+        rating: parseFloat(String(item.final_rating || '0')),
         date: item.review_cycle?.start_date
       }));
     },
