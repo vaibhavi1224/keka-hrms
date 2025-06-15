@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Users, Brain, RefreshCw, TrendingUp } from 'lucide-react';
+import { AlertTriangle, Users, Brain, RefreshCw, TrendingUp, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -23,6 +22,7 @@ interface PredictionRecord {
   attrition_risk: number;
   risk_level: string;
   predicted_at: string;
+  risk_factors?: string[];
   profiles: {
     first_name: string;
     last_name: string;
@@ -67,7 +67,8 @@ const AttritionPredictor = () => {
             employee_id,
             attrition_risk,
             risk_level,
-            predicted_at
+            predicted_at,
+            risk_factors
           `)
           .order('attrition_risk', { ascending: false });
 
@@ -144,6 +145,25 @@ const AttritionPredictor = () => {
       case 'LOW': return 'bg-green-100 text-green-800 border-green-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
+  };
+
+  const formatRiskFactors = (riskFactors: any): string[] => {
+    if (!riskFactors) return ['No specific risk factors identified'];
+    
+    if (Array.isArray(riskFactors)) {
+      return riskFactors.length > 0 ? riskFactors : ['No specific risk factors identified'];
+    }
+    
+    if (typeof riskFactors === 'string') {
+      try {
+        const parsed = JSON.parse(riskFactors);
+        return Array.isArray(parsed) ? parsed : [riskFactors];
+      } catch {
+        return [riskFactors];
+      }
+    }
+    
+    return ['No specific risk factors identified'];
   };
 
   const highRiskEmployees = predictions.filter((p: PredictionRecord) => p.risk_level === 'HIGH').length;
@@ -285,29 +305,52 @@ const AttritionPredictor = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {predictions.map((prediction: PredictionRecord) => (
-                <div key={prediction.employee_id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <h4 className="font-medium">
-                        {prediction.profiles?.first_name} {prediction.profiles?.last_name}
-                      </h4>
-                      <p className="text-sm text-gray-600">{prediction.profiles?.department}</p>
+              {predictions.map((prediction: PredictionRecord) => {
+                const riskFactors = formatRiskFactors(prediction.risk_factors);
+                
+                return (
+                  <div key={prediction.employee_id} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className="font-medium">
+                          {prediction.profiles?.first_name} {prediction.profiles?.last_name}
+                        </h4>
+                        <p className="text-sm text-gray-600">{prediction.profiles?.department}</p>
+                      </div>
+                      <div className="text-right">
+                        <Badge className={getRiskColor(prediction.risk_level)}>
+                          {prediction.risk_level} RISK
+                        </Badge>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {(prediction.attrition_risk * 100).toFixed(1)}% risk
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <Badge className={getRiskColor(prediction.risk_level)}>
-                        {prediction.risk_level} RISK
-                      </Badge>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {(prediction.attrition_risk * 100).toFixed(1)}% risk
-                      </p>
+                    
+                    {/* Risk Factors */}
+                    <div className="mt-3 p-3 bg-gray-50 rounded-md">
+                      <div className="flex items-start gap-2">
+                        <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 mb-1">Risk Factors:</p>
+                          <ul className="text-sm text-gray-600 space-y-1">
+                            {riskFactors.map((factor, index) => (
+                              <li key={index} className="flex items-start gap-1">
+                                <span className="w-1 h-1 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                <span>{factor}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
                     </div>
+                    
+                    <p className="text-xs text-gray-500 mt-3">
+                      Analyzed: {new Date(prediction.predicted_at).toLocaleDateString()}
+                    </p>
                   </div>
-                  <p className="text-xs text-gray-500">
-                    Analyzed: {new Date(prediction.predicted_at).toLocaleDateString()}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
