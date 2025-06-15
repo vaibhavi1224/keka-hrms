@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -126,7 +125,7 @@ async function generateSalaryStructure(employeeId: string, department: string, d
 }
 
 function getSalaryByRole(department: string, designation: string): number {
-  const baseSalaries: { [key: string]: number } = {
+  const baseSalaries: { [key: string]: { [key: string]: number } } = {
     'Engineering': { 'Junior': 600000, 'Senior': 1200000, 'Lead': 1800000, 'Manager': 2500000 },
     'Sales': { 'Executive': 400000, 'Senior': 800000, 'Manager': 1500000 },
     'Marketing': { 'Executive': 450000, 'Senior': 900000, 'Manager': 1600000 },
