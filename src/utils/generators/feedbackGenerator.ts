@@ -15,19 +15,20 @@ export function generatePerformanceFeedback(employeeId: string, startDate: Date,
     quarterEnd.setMonth(quarterEnd.getMonth() + 3);
     quarterEnd.setDate(quarterEnd.getDate() - 1);
 
-    feedbackTypes.forEach(type => {
-      const rating = 3 + Math.random() * 2; // 3-5 rating
-      const feedbackText = generateFeedbackText(type, rating);
-      
-      feedback.push({
-        employee_id: employeeId,
-        feedback_type: type,
-        feedback_text: feedbackText,
-        rating: Math.round(rating * 10) / 10,
-        review_period_start: quarterStart.toISOString().split('T')[0],
-        review_period_end: quarterEnd.toISOString().split('T')[0],
-        created_by: employeeId // Set created_by to satisfy RLS policy
-      });
+    // Only create self_review feedback to satisfy RLS policy
+    // The RLS policy requires created_by = auth.uid(), so we can only create feedback
+    // for the current user (employeeId) by the current user (employeeId)
+    const rating = 3 + Math.random() * 2; // 3-5 rating
+    const feedbackText = generateFeedbackText('self_review', rating);
+    
+    feedback.push({
+      employee_id: employeeId,
+      feedback_type: 'self_review',
+      feedback_text: feedbackText,
+      rating: Math.round(rating * 10) / 10,
+      review_period_start: quarterStart.toISOString().split('T')[0],
+      review_period_end: quarterEnd.toISOString().split('T')[0],
+      created_by: employeeId // This satisfies the RLS policy: created_by = auth.uid()
     });
   }
 
