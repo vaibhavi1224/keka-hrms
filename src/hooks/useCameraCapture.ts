@@ -1,6 +1,11 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import type { CameraState } from '@/types/camera';
+import { checkCameraSupport } from '@/utils/camera/cameraValidation';
+import { startCameraStream, stopCameraStream, connectStreamToVideo } from '@/utils/camera/streamManager';
+import { capturePhotoFromVideo } from '@/utils/camera/photoCapture';
+import { getCameraErrorMessage, getDebugMessage } from '@/utils/camera/errorHandler';
 
 export const useCameraCapture = () => {
   const [isCapturing, setIsCapturing] = useState(false);
@@ -15,59 +20,27 @@ export const useCameraCapture = () => {
 
   // Debug camera capabilities
   useEffect(() => {
-    const checkCameraSupport = async () => {
-      console.log('Checking camera support...');
+    const validateCamera = async () => {
       setDebugInfo('Checking camera support...');
       
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        const error = 'Camera not supported in this browser';
-        console.error(error);
-        setDebugInfo(error);
-        setCameraError(error);
-        return;
-      }
-
-      if (!window.isSecureContext && window.location.hostname !== 'localhost') {
-        const error = 'Camera requires HTTPS or localhost';
-        console.error(error);
-        setDebugInfo(error);
-        setCameraError(error);
-        return;
-      }
-
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter(device => device.kind === 'videoinput');
-        console.log('Video devices found:', videoDevices.length);
-        setDebugInfo(`Found ${videoDevices.length} camera(s)`);
-        
-        if (videoDevices.length === 0) {
-          setCameraError('No camera found on this device');
-        }
-      } catch (error) {
-        console.error('Error checking devices:', error);
-        setDebugInfo('Error checking camera devices');
+      const result = await checkCameraSupport();
+      
+      if (!result.isSupported) {
+        setDebugInfo(result.error || 'Camera validation failed');
+        setCameraError(result.error || 'Camera validation failed');
+      } else {
+        setDebugInfo(`Found ${result.deviceCount} camera(s)`);
       }
     };
 
-    checkCameraSupport();
+    validateCamera();
   }, []);
 
   // Effect to connect stream to video element when both are available
   useEffect(() => {
     if (stream && videoRef.current && isCapturing) {
-      console.log('Connecting stream to video element');
-      videoRef.current.srcObject = stream;
-      
-      videoRef.current.onloadedmetadata = () => {
-        console.log('Video metadata loaded, video should be playing');
-        setDebugInfo('Camera ready and playing');
-      };
-      
-      // Ensure video plays
-      videoRef.current.play().catch(error => {
-        console.error('Error playing video:', error);
-      });
+      connectStreamToVideo(stream, videoRef.current);
+      setDebugInfo('Camera ready and playing');
     }
   }, [stream, isCapturing]);
 
@@ -76,45 +49,23 @@ export const useCameraCapture = () => {
     setIsStarting(true);
     
     try {
-      console.log('Starting camera...');
       setCameraError(null);
       setDebugInfo('Requesting camera access...');
       
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          facingMode: 'user'
-        }
-      });
+      const mediaStream = await startCameraStream();
       
-      console.log('Camera stream obtained');
       setDebugInfo('Camera access granted');
       setStream(mediaStream);
       setIsCapturing(true);
       
     } catch (error: any) {
       console.error('Error accessing camera:', error);
-      let errorMessage = 'Unable to access camera. ';
-      
-      if (error.name === 'NotAllowedError') {
-        errorMessage += 'Please allow camera access and try again.';
-        setDebugInfo('Camera permission denied');
-      } else if (error.name === 'NotFoundError') {
-        errorMessage += 'No camera found on this device.';
-        setDebugInfo('No camera device found');
-      } else if (error.name === 'NotSupportedError') {
-        errorMessage += 'Camera not supported in this browser.';
-        setDebugInfo('Camera not supported');
-      } else if (error.name === 'NotReadableError') {
-        errorMessage += 'Camera is already in use by another application.';
-        setDebugInfo('Camera busy');
-      } else {
-        errorMessage += 'Please check camera permissions and try again.';
-        setDebugInfo(`Camera error: ${error.message}`);
-      }
+      const errorMessage = getCameraErrorMessage(error);
+      const debugMessage = getDebugMessage(error);
       
       setCameraError(errorMessage);
+      setDebugInfo(debugMessage);
+      
       toast({
         title: "Camera Error",
         description: errorMessage,
@@ -126,14 +77,8 @@ export const useCameraCapture = () => {
   }, [toast]);
 
   const stopCamera = useCallback(() => {
-    console.log('Stopping camera...');
-    if (stream) {
-      stream.getTracks().forEach(track => {
-        track.stop();
-        console.log('Camera track stopped');
-      });
-      setStream(null);
-    }
+    stopCameraStream(stream);
+    setStream(null);
     setIsCapturing(false);
     setDebugInfo('Camera stopped');
   }, [stream]);
@@ -145,27 +90,15 @@ export const useCameraCapture = () => {
       return;
     }
 
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-
-    if (!context) {
-      console.error('Could not get canvas context');
-      return;
+    try {
+      const imageDataUrl = capturePhotoFromVideo(videoRef.current, canvasRef.current);
+      setCapturedImage(imageDataUrl);
+      stopCamera();
+      setDebugInfo('Photo captured successfully');
+    } catch (error) {
+      console.error('Error capturing photo:', error);
+      setDebugInfo('Failed to capture photo');
     }
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    console.log(`Canvas dimensions: ${canvas.width}x${canvas.height}`);
-
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-    setCapturedImage(imageDataUrl);
-    stopCamera();
-    setDebugInfo('Photo captured successfully');
-    console.log('Photo captured');
   }, [stopCamera]);
 
   const retakePhoto = () => {
