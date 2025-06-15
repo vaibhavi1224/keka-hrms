@@ -7,14 +7,13 @@ import {
   createBrowserRouter,
   RouterProvider,
 } from "react-router-dom";
-import Login from './components/auth/Login.tsx';
-import Register from './components/auth/Register.tsx';
+import Auth from './pages/Auth.tsx';
 import Dashboard from './components/dashboard/Dashboard.tsx';
 import ProtectedRoute from './components/auth/ProtectedRoute.tsx';
 import Attendance from './components/attendance/AttendanceTracker.tsx';
 import Leave from './components/leave/LeaveManagement.tsx';
 import Payroll from './components/payroll/PayrollDashboard.tsx';
-import Reports from './components/reports/ReportsAnalyticsDashboard.tsx';
+import Reports from './pages/Analytics.tsx';
 import AnomalyDetection from './pages/AnomalyDetection';
 
 const router = createBrowserRouter([
@@ -23,12 +22,16 @@ const router = createBrowserRouter([
     element: <App />,
   },
   {
+    path: "/auth",
+    element: <Auth />,
+  },
+  {
     path: "/login",
-    element: <Login />,
+    element: <Auth />,
   },
   {
     path: "/register",
-    element: <Register />,
+    element: <Auth />,
   },
   {
     path: "/dashboard",
@@ -48,6 +51,10 @@ const router = createBrowserRouter([
   },
   {
     path: "/reports",
+    element: <ProtectedRoute><Reports /></ProtectedRoute>,
+  },
+  {
+    path: "/analytics",
     element: <ProtectedRoute><Reports /></ProtectedRoute>,
   },
   {
