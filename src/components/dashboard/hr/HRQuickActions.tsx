@@ -6,7 +6,11 @@ import { Plus, Users, Calendar, DollarSign, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import HRDataManagement from '@/components/hr/HRDataManagement';
 
-const HRQuickActions = () => {
+interface HRQuickActionsProps {
+  onInviteEmployee?: () => void;
+}
+
+const HRQuickActions = ({ onInviteEmployee }: HRQuickActionsProps) => {
   const navigate = useNavigate();
 
   return (
@@ -23,7 +27,7 @@ const HRQuickActions = () => {
             <Button 
               variant="outline" 
               className="h-20 flex flex-col items-center justify-center space-y-2"
-              onClick={() => navigate('/employee-management')}
+              onClick={onInviteEmployee || (() => navigate('/employee-management'))}
             >
               <Users className="w-6 h-6" />
               <span className="text-sm">Add Employee</span>
