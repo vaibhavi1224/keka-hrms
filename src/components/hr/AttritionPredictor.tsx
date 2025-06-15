@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,9 +86,25 @@ const AttritionPredictor = () => {
     }
   });
 
+  // Clear old predictions function
+  const clearOldPredictions = async () => {
+    const { error } = await supabase
+      .from('attrition_predictions')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+
+    if (error) {
+      console.error('Error clearing old predictions:', error);
+      throw error;
+    }
+  };
+
   // Run prediction mutation
   const runPredictionMutation = useMutation({
     mutationFn: async (employeeIds: string[]) => {
+      // Clear old predictions first
+      await clearOldPredictions();
+      
       const { data, error } = await supabase.functions.invoke('attrition-predictor', {
         body: { employee_ids: employeeIds }
       });
@@ -97,10 +114,12 @@ const AttritionPredictor = () => {
     },
     onSuccess: (data) => {
       toast({
-        title: "Predictions Generated",
-        description: `Successfully generated attrition predictions for ${data.predictions.length} employees.`,
+        title: "Analysis Complete",
+        description: `Successfully generated fresh attrition predictions for ${data.predictions.length} employees.`,
       });
+      // Force refresh the predictions data
       queryClient.invalidateQueries({ queryKey: ['attrition-predictions'] });
+      queryClient.refetchQueries({ queryKey: ['attrition-predictions'] });
     },
     onError: (error) => {
       toast({
@@ -317,13 +336,15 @@ const AttritionPredictor = () => {
       {/* Predictions Results */}
       <Card>
         <CardHeader>
-          <CardTitle>Attrition Risk Analysis Results</CardTitle>
+          <CardTitle>Latest Attrition Risk Analysis Results</CardTitle>
         </CardHeader>
         <CardContent>
-          {loadingPredictions ? (
+          {loadingPredictions || runPredictionMutation.isPending ? (
             <div className="text-center py-8">
               <RefreshCw className="w-8 h-8 text-gray-400 mx-auto mb-4 animate-spin" />
-              <p className="text-gray-600">Loading predictions...</p>
+              <p className="text-gray-600">
+                {runPredictionMutation.isPending ? 'Generating fresh predictions...' : 'Loading predictions...'}
+              </p>
             </div>
           ) : predictions.length === 0 ? (
             <div className="text-center py-8">
