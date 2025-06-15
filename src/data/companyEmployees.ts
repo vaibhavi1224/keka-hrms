@@ -341,7 +341,7 @@ export const companyEmployeesData: EmployeeData[] = [
     salary: 54000,
     date_of_joining: "2023-09-08",
     bankDetails: {
-      band_name: "DCB Bank",
+      bank_name: "DCB Bank",
       account_number: "90123876543",
       ifsc_code: "DCBL0009012",
       pan_number: "STUVW9012X",
