@@ -126,6 +126,53 @@ export type Database = {
           },
         ]
       }
+      attrition_predictions: {
+        Row: {
+          attrition_risk: number
+          confidence_score: number | null
+          created_at: string
+          employee_id: string
+          id: string
+          model_version: string | null
+          predicted_at: string
+          risk_factors: Json | null
+          risk_level: string
+          updated_at: string
+        }
+        Insert: {
+          attrition_risk: number
+          confidence_score?: number | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          model_version?: string | null
+          predicted_at?: string
+          risk_factors?: Json | null
+          risk_level: string
+          updated_at?: string
+        }
+        Update: {
+          attrition_risk?: number
+          confidence_score?: number | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          model_version?: string | null
+          predicted_at?: string
+          risk_factors?: Json | null
+          risk_level?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attrition_predictions_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       biometric_credentials: {
         Row: {
           counter: number
