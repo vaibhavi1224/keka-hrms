@@ -1,10 +1,27 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Download, BarChart } from 'lucide-react';
+import MonthlyReportGenerator from './reports/MonthlyReportGenerator';
+import PayrollExporter from './reports/PayrollExporter';
+import PayrollAnalytics from './reports/PayrollAnalytics';
 
 const PayrollReports = () => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'monthly' | 'export' | 'analytics'>('overview');
+
+  if (activeTab === 'monthly') {
+    return <MonthlyReportGenerator onBack={() => setActiveTab('overview')} />;
+  }
+
+  if (activeTab === 'export') {
+    return <PayrollExporter onBack={() => setActiveTab('overview')} />;
+  }
+
+  if (activeTab === 'analytics') {
+    return <PayrollAnalytics onBack={() => setActiveTab('overview')} />;
+  }
+
   return (
     <div className="space-y-6">
       <Card>
@@ -15,23 +32,36 @@ const PayrollReports = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
-              <FileText className="w-6 h-6" />
-              <span>Monthly Report</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Button 
+              variant="outline" 
+              className="h-32 flex flex-col items-center justify-center space-y-3 hover:bg-gray-50 border-2"
+              onClick={() => setActiveTab('monthly')}
+            >
+              <FileText className="w-8 h-8 text-blue-600" />
+              <span className="font-semibold text-lg">Monthly Report</span>
+              <span className="text-sm text-gray-500">Generate monthly payroll reports</span>
             </Button>
-            <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
-              <Download className="w-6 h-6" />
-              <span>Export Payroll</span>
+
+            <Button 
+              variant="outline" 
+              className="h-32 flex flex-col items-center justify-center space-y-3 hover:bg-gray-50 border-2 border-black"
+              onClick={() => setActiveTab('export')}
+            >
+              <Download className="w-8 h-8 text-green-600" />
+              <span className="font-semibold text-lg">Export Payroll</span>
+              <span className="text-sm text-gray-500">Export payroll data to CSV/Excel</span>
             </Button>
-            <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
-              <BarChart className="w-6 h-6" />
-              <span>Analytics</span>
+
+            <Button 
+              variant="outline" 
+              className="h-32 flex flex-col items-center justify-center space-y-3 hover:bg-gray-50 border-2"
+              onClick={() => setActiveTab('analytics')}
+            >
+              <BarChart className="w-8 h-8 text-purple-600" />
+              <span className="font-semibold text-lg">Analytics</span>
+              <span className="text-sm text-gray-500">View payroll analytics & insights</span>
             </Button>
-          </div>
-          
-          <div className="mt-8 text-center py-8 text-gray-500">
-            Advanced reporting and analytics features coming soon...
           </div>
         </CardContent>
       </Card>
