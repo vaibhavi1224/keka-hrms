@@ -1,19 +1,11 @@
 
 import React from 'react';
-import { Bell, Settings, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { LogOut, Settings, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useProfile } from '@/hooks/useProfile';
-import { useToast } from '@/hooks/use-toast';
-import ProfileUpdateDialog from '@/components/profile/ProfileUpdateDialog';
+import { toast } from 'sonner';
+import NotificationCenter from '@/components/common/NotificationCenter';
 
 interface HeaderProps {
   userRole: string;
@@ -22,80 +14,64 @@ interface HeaderProps {
 
 const Header = ({ userRole, userName }: HeaderProps) => {
   const { signOut } = useAuth();
-  const { profile } = useProfile();
-  const { toast } = useToast();
 
   const handleSignOut = async () => {
     const { error } = await signOut();
     if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to sign out. Please try again.",
-        variant: "destructive",
-      });
+      toast.error('Failed to sign out');
+    } else {
+      toast.success('Signed out successfully');
     }
   };
 
-  const getInitials = () => {
-    const firstName = profile?.first_name || '';
-    const lastName = profile?.last_name || '';
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-  };
-
-  const getRoleDisplay = (role: string) => {
+  const getRoleColor = (role: string) => {
     switch (role) {
-      case 'hr': return 'HR Manager';
-      case 'manager': return 'Manager';
-      case 'employee': return 'Employee';
-      default: return 'User';
+      case 'hr':
+        return 'bg-purple-100 text-purple-800';
+      case 'manager':
+        return 'bg-blue-100 text-blue-800';
+      case 'employee':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-600">{getRoleDisplay(userRole)}</p>
+        <div className="flex items-center space-x-4">
+          <h1 className="text-xl font-semibold text-gray-900">HRMS Pro</h1>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRoleColor(userRole)}`}>
+            {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+          </span>
         </div>
         
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="sm">
-            <Bell className="w-5 h-5" />
-          </Button>
+          {/* Real-time Notifications */}
+          <NotificationCenter />
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={profile?.profile_picture || ''} />
-                  <AvatarFallback>{getInitials()}</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <div className="flex flex-col space-y-1 p-2">
-                <p className="text-sm font-medium leading-none">{userName}</p>
-                <p className="text-xs leading-none text-muted-foreground">{profile?.email}</p>
-              </div>
-              <DropdownMenuSeparator />
-              <ProfileUpdateDialog>
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </DropdownMenuItem>
-              </ProfileUpdateDialog>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center space-x-3">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src="/placeholder.svg" alt={userName} />
+              <AvatarFallback>
+                {userName.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="hidden md:block">
+              <p className="text-sm font-medium text-gray-900">{userName}</p>
+              <p className="text-xs text-gray-500">{userRole}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm">
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </header>

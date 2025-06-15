@@ -1,59 +1,111 @@
 
 import React, { useState } from 'react';
 import Layout from '@/components/layout/Layout';
+import { useProfile } from '@/hooks/useProfile';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Users, FileText, Building, UserPlus, Settings } from 'lucide-react';
 import EmployeeList from '@/components/employees/EmployeeList';
+import AddEmployee from '@/components/hr/AddEmployee';
 import DepartmentManager from '@/components/employees/DepartmentManager';
-import DesignationManager from '@/components/employees/DesignationManager';
-import OrgChart from '@/components/employees/OrgChart';
-import { Users, Building, Briefcase, Network } from 'lucide-react';
+import DocumentManager from '@/components/hr/DocumentManager';
+import WorkflowManager from '@/components/employees/WorkflowManager';
 
 const EmployeeManagement = () => {
+  const { profile, loading } = useProfile();
+  const [activeTab, setActiveTab] = useState('employees');
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Loading employee management...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  const isHR = profile?.role === 'hr';
+  const isManager = profile?.role === 'manager';
+
+  if (!isHR && !isManager) {
+    return (
+      <Layout>
+        <div className="text-center py-12">
+          <p className="text-gray-600">You don't have permission to access employee management.</p>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Employees</h1>
-          <p className="text-gray-600 mt-1">
-            Comprehensive employee management with onboarding, org structure, and workflows
-          </p>
+        {/* Header */}
+        <div className="flex items-center space-x-3">
+          <Users className="h-8 w-8 text-blue-600" />
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Employee Management</h1>
+            <p className="text-gray-600">
+              {isHR ? "Manage employees, departments, and HR documents" : "View and manage your team"}
+            </p>
+          </div>
         </div>
 
-        <Tabs defaultValue="employees" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="employees" className="flex items-center gap-2">
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className={`grid w-full ${isHR ? 'grid-cols-5' : 'grid-cols-2'}`}>
+            <TabsTrigger value="employees" className="flex items-center space-x-2">
               <Users className="w-4 h-4" />
-              Employees
+              <span>Employees</span>
             </TabsTrigger>
-            <TabsTrigger value="departments" className="flex items-center gap-2">
-              <Building className="w-4 h-4" />
-              Departments
-            </TabsTrigger>
-            <TabsTrigger value="designations" className="flex items-center gap-2">
-              <Briefcase className="w-4 h-4" />
-              Designations
-            </TabsTrigger>
-            <TabsTrigger value="org-chart" className="flex items-center gap-2">
-              <Network className="w-4 h-4" />
-              Org Chart
-            </TabsTrigger>
+            {isHR && (
+              <>
+                <TabsTrigger value="add-employee" className="flex items-center space-x-2">
+                  <UserPlus className="w-4 h-4" />
+                  <span>Add Employee</span>
+                </TabsTrigger>
+                <TabsTrigger value="departments" className="flex items-center space-x-2">
+                  <Building className="w-4 h-4" />
+                  <span>Departments</span>
+                </TabsTrigger>
+                <TabsTrigger value="documents" className="flex items-center space-x-2">
+                  <FileText className="w-4 h-4" />
+                  <span>Documents</span>
+                </TabsTrigger>
+                <TabsTrigger value="workflows" className="flex items-center space-x-2">
+                  <Settings className="w-4 h-4" />
+                  <span>Workflows</span>
+                </TabsTrigger>
+              </>
+            )}
           </TabsList>
 
-          <TabsContent value="employees" className="space-y-6">
-            <EmployeeList />
+          <TabsContent value="employees">
+            <EmployeeList userRole={profile?.role || 'employee'} />
           </TabsContent>
 
-          <TabsContent value="departments" className="space-y-6">
-            <DepartmentManager />
-          </TabsContent>
+          {isHR && (
+            <>
+              <TabsContent value="add-employee">
+                <AddEmployee />
+              </TabsContent>
 
-          <TabsContent value="designations" className="space-y-6">
-            <DesignationManager />
-          </TabsContent>
+              <TabsContent value="departments">
+                <DepartmentManager />
+              </TabsContent>
 
-          <TabsContent value="org-chart" className="space-y-6">
-            <OrgChart />
-          </TabsContent>
+              <TabsContent value="documents">
+                <DocumentManager />
+              </TabsContent>
+
+              <TabsContent value="workflows">
+                <WorkflowManager />
+              </TabsContent>
+            </>
+          )}
         </Tabs>
       </div>
     </Layout>
