@@ -25,7 +25,8 @@ export function generatePerformanceFeedback(employeeId: string, startDate: Date,
         feedback_text: feedbackText,
         rating: Math.round(rating * 10) / 10,
         review_period_start: quarterStart.toISOString().split('T')[0],
-        review_period_end: quarterEnd.toISOString().split('T')[0]
+        review_period_end: quarterEnd.toISOString().split('T')[0],
+        created_by: employeeId // Set created_by to satisfy RLS policy
       });
     });
   }

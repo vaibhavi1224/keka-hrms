@@ -17,13 +17,14 @@ export interface PerformanceFeedback {
   rating: number;
   review_period_start: string;
   review_period_end: string;
+  created_by?: string; // Make created_by optional to handle RLS
 }
 
 export interface AttendanceRecord {
   user_id: string;
   date: string;
-  check_in_time: string;
-  check_out_time: string;
+  check_in_time: string | null; // Allow null for absent days
+  check_out_time: string | null; // Allow null for absent days
   status: 'present' | 'absent' | 'late' | 'half_day';
   working_hours: number;
   biometric_verified: boolean;
