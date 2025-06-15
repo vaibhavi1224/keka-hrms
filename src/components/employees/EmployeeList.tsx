@@ -24,18 +24,21 @@ const EmployeeList = () => {
   const { data: employees = [], refetch } = useQuery({
     queryKey: ['employees'],
     queryFn: async () => {
+      console.log('Fetching employees...');
       const { data, error } = await supabase
         .from('profiles')
         .select(`
           *,
-          employees(*),
-          departments!profiles_department_fkey(name),
           manager:profiles!profiles_manager_id_fkey(first_name, last_name)
         `)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching employees:', error);
+        throw error;
+      }
+      console.log('Employees fetched:', data?.length || 0);
       return data || [];
     },
     enabled: !!profile
