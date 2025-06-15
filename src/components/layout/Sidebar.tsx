@@ -1,100 +1,103 @@
-
 import React from 'react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { useLocation, Link } from 'react-router-dom';
+import { Home, Users, Calendar, FileText, DollarSign, BarChart, MessageCircle, TrendingUp } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Clock, 
-  Calendar, 
-  DollarSign, 
-  BarChart3, 
-  MessageSquare,
-  Settings,
-  UserCheck,
-  Building
-} from 'lucide-react';
 
-interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface MenuItem {
+  icon: React.ComponentType<any>;
+  label: string;
+  path: string;
+  roles: string[];
+}
 
-const Sidebar = ({ className }: SidebarProps) => {
+const Sidebar = () => {
   const { profile } = useProfile();
-  const currentPath = window.location.pathname;
+  const location = useLocation();
 
-  const navigation = [
-    {
-      name: 'Dashboard',
-      href: '/',
-      icon: LayoutDashboard,
-      roles: ['hr', 'manager', 'employee']
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
+
+  const menuItems = [
+    { 
+      icon: Home, 
+      label: 'Dashboard', 
+      path: '/',
+      roles: ['employee', 'manager', 'hr']
     },
-    {
-      name: 'Employees',
-      href: '/employee-management',
-      icon: Users,
-      roles: ['hr', 'manager']
+    { 
+      icon: Users, 
+      label: 'Employees', 
+      path: '/employees',
+      roles: ['manager', 'hr']
     },
-    {
-      name: 'Attendance',
-      href: '/attendance',
-      icon: Clock,
-      roles: ['hr', 'manager', 'employee']
+    { 
+      icon: Calendar, 
+      label: 'Attendance', 
+      path: '/attendance',
+      roles: ['employee', 'manager', 'hr']
     },
-    {
-      name: 'Leave Management',
-      href: '/leave',
-      icon: Calendar,
-      roles: ['hr', 'manager', 'employee']
+    { 
+      icon: FileText, 
+      label: 'Leave', 
+      path: '/leave',
+      roles: ['employee', 'manager', 'hr']
     },
-    {
-      name: 'Payroll',
-      href: '/payroll',
-      icon: DollarSign,
+    { 
+      icon: DollarSign, 
+      label: 'Payroll', 
+      path: '/payroll',
       roles: ['hr']
     },
-    {
-      name: 'Analytics',
-      href: '/analytics',
-      icon: BarChart3,
-      roles: ['hr', 'manager']
+    { 
+      icon: TrendingUp, 
+      label: 'Performance', 
+      path: '/performance',
+      roles: ['employee', 'manager', 'hr']
     },
-    {
-      name: 'HR Assistant',
-      href: '/hr-chat',
-      icon: MessageSquare,
-      roles: ['hr', 'manager', 'employee']
+    { 
+      icon: BarChart, 
+      label: 'Analytics', 
+      path: '/analytics',
+      roles: ['manager', 'hr']
+    },
+    { 
+      icon: MessageCircle, 
+      label: 'HR Chat', 
+      path: '/hr-chat',
+      roles: ['employee', 'manager', 'hr']
     }
   ];
 
-  const filteredNavigation = navigation.filter(item => 
-    item.roles.includes(profile?.role || 'employee')
-  );
+  const filteredMenuItems = menuItems.filter(item => profile && item.roles.includes(profile.role));
 
   return (
-    <div className={cn("pb-12 w-64", className)}>
-      <div className="space-y-4 py-4">
-        <div className="px-3 py-2">
-          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
-            AI HRMS
-          </h2>
-          <div className="space-y-1">
-            {filteredNavigation.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Button
-                  key={item.name}
-                  variant={currentPath === item.href ? "secondary" : "ghost"}
-                  className="w-full justify-start"
-                  onClick={() => window.location.href = item.href}
-                >
-                  <Icon className="mr-2 h-4 w-4" />
-                  {item.name}
-                </Button>
-              );
-            })}
-          </div>
-        </div>
+    <div className="w-64 bg-gray-100 h-full py-4 px-3 flex flex-col">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-800">HRMS</h1>
+        <p className="text-sm text-gray-500">Your Company</p>
+      </div>
+
+      <nav className="flex-grow">
+        <ul className="space-y-2">
+          {filteredMenuItems.map((item) => (
+            <li key={item.label}>
+              <Link
+                to={item.path}
+                className={`flex items-center space-x-3 py-2 px-4 rounded-md hover:bg-gray-200 ${
+                  isActive(item.path) ? 'bg-gray-200 font-medium' : 'text-gray-700'
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+                <span>{item.label}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <div className="mt-auto text-center">
+        <p className="text-xs text-gray-500">Version 0.1.0</p>
       </div>
     </div>
   );

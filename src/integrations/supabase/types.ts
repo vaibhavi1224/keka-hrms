@@ -9,6 +9,70 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      appraisals: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          employee_id: string
+          final_rating: number | null
+          id: string
+          promotion_eligible: boolean | null
+          remarks: string | null
+          review_cycle_id: string
+          salary_increment: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          employee_id: string
+          final_rating?: number | null
+          id?: string
+          promotion_eligible?: boolean | null
+          remarks?: string | null
+          review_cycle_id: string
+          salary_increment?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          employee_id?: string
+          final_rating?: number | null
+          id?: string
+          promotion_eligible?: boolean | null
+          remarks?: string | null
+          review_cycle_id?: string
+          salary_increment?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appraisals_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appraisals_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appraisals_review_cycle_id_fkey"
+            columns: ["review_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "review_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance: {
         Row: {
           biometric_verified: boolean | null
@@ -360,6 +424,127 @@ export type Database = {
           {
             foreignKeyName: "employees_profile_id_fkey"
             columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feedback_reviews: {
+        Row: {
+          created_at: string
+          feedback: string
+          id: string
+          rating: number
+          review_cycle_id: string
+          review_type: string
+          reviewee_id: string
+          reviewer_id: string
+          submitted_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          feedback: string
+          id?: string
+          rating: number
+          review_cycle_id: string
+          review_type: string
+          reviewee_id: string
+          reviewer_id: string
+          submitted_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          feedback?: string
+          id?: string
+          rating?: number
+          review_cycle_id?: string
+          review_type?: string
+          reviewee_id?: string
+          reviewer_id?: string
+          submitted_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_reviews_review_cycle_id_fkey"
+            columns: ["review_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "review_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_reviews_reviewee_id_fkey"
+            columns: ["reviewee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goals_okrs: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          employee_id: string
+          end_date: string
+          goal_type: string
+          id: string
+          start_date: string
+          status: string
+          title: string
+          updated_at: string
+          weightage: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          employee_id: string
+          end_date: string
+          goal_type: string
+          id?: string
+          start_date: string
+          status?: string
+          title: string
+          updated_at?: string
+          weightage?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          employee_id?: string
+          end_date?: string
+          goal_type?: string
+          id?: string
+          start_date?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          weightage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_okrs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goals_okrs_employee_id_fkey"
+            columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1130,6 +1315,50 @@ export type Database = {
           },
         ]
       }
+      review_cycles: {
+        Row: {
+          created_at: string
+          created_by: string
+          cycle_type: string
+          end_date: string
+          id: string
+          name: string
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          cycle_type: string
+          end_date: string
+          id?: string
+          name: string
+          start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          cycle_type?: string
+          end_date?: string
+          id?: string
+          name?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_cycles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salary_revision_logs: {
         Row: {
           approved_by: string
@@ -1407,6 +1636,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_final_rating: {
+        Args: { p_employee_id: string; p_review_cycle_id: string }
+        Returns: number
+      }
       calculate_payroll: {
         Args: {
           p_employee_id: string
