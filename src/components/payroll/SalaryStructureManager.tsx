@@ -8,7 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { User, DollarSign, Plus, Edit, Save } from 'lucide-react';
+import { User, DollarSign, Plus, Save } from 'lucide-react';
+import MissingSalaryStructures from './MissingSalaryStructures';
 
 interface SalaryStructure {
   id: string;
@@ -34,7 +35,6 @@ interface SalaryStructure {
 
 const SalaryStructureManager = () => {
   const [selectedEmployee, setSelectedEmployee] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     basic_salary: 0,
     hra: 0,
@@ -50,9 +50,9 @@ const SalaryStructureManager = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch employees
-  const { data: employees } = useQuery({
-    queryKey: ['employees'],
+  // Fetch employees with salary structures
+  const { data: employeesWithSalary } = useQuery({
+    queryKey: ['employees-with-salary'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
@@ -106,11 +106,9 @@ const SalaryStructureManager = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Calculate CTC
       const ctc = data.basic_salary + data.hra + data.special_allowance + 
                  data.transport_allowance + data.medical_allowance + data.other_allowances;
 
-      // Get current structure for revision tracking
       const { data: currentStructure } = await supabase
         .from('salary_structures')
         .select('ctc')
@@ -118,13 +116,11 @@ const SalaryStructureManager = () => {
         .eq('is_active', true)
         .single();
 
-      // Deactivate existing structures for this employee
       await supabase
         .from('salary_structures')
         .update({ is_active: false })
         .eq('employee_id', selectedEmployee);
 
-      // Create new structure with revision tracking
       const { error } = await supabase
         .from('salary_structures')
         .insert({
@@ -144,7 +140,7 @@ const SalaryStructureManager = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['salary-structures'] });
       queryClient.invalidateQueries({ queryKey: ['salary-revision-logs'] });
-      setIsEditing(false);
+      queryClient.invalidateQueries({ queryKey: ['employees-without-salary'] });
       setSelectedEmployee('');
       setFormData({
         basic_salary: 0,
@@ -199,12 +195,15 @@ const SalaryStructureManager = () => {
 
   return (
     <div className="space-y-6">
+      {/* Missing Salary Structures Section */}
+      <MissingSalaryStructures />
+
       {/* Create/Edit Form */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Plus className="w-5 h-5" />
-            <span>{isEditing ? 'Update' : 'Create'} Salary Structure</span>
+            <span>Create/Update Salary Structure</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -217,7 +216,7 @@ const SalaryStructureManager = () => {
                     <SelectValue placeholder="Choose employee" />
                   </SelectTrigger>
                   <SelectContent>
-                    {employees?.map((emp) => (
+                    {employeesWithSalary?.map((emp) => (
                       <SelectItem key={emp.id} value={emp.id}>
                         {emp.first_name} {emp.last_name} ({emp.employee_id || emp.email})
                       </SelectItem>
@@ -301,7 +300,6 @@ const SalaryStructureManager = () => {
               </div>
             </div>
 
-            {/* Revision Tracking Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="revision_reason">Revision Reason</Label>
@@ -338,7 +336,6 @@ const SalaryStructureManager = () => {
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  setIsEditing(false);
                   setSelectedEmployee('');
                   setFormData({
                     basic_salary: 0,
