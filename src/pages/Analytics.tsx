@@ -5,8 +5,9 @@ import { useProfile } from '@/hooks/useProfile';
 import { PerformanceInsights } from '@/components/dashboard/employee/PerformanceInsights';
 import { PerformanceMetricsForm } from '@/components/dashboard/employee/PerformanceMetricsForm';
 import { FeedbackForm } from '@/components/dashboard/employee/FeedbackForm';
+import SeedPerformanceDataButton from '@/components/hr/SeedPerformanceDataButton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, TrendingUp, MessageSquare } from 'lucide-react';
+import { BarChart3, TrendingUp, MessageSquare, Settings } from 'lucide-react';
 
 const Analytics = () => {
   const { profile } = useProfile();
@@ -21,6 +22,23 @@ const Analytics = () => {
             <p className="text-gray-600">Track performance metrics and insights</p>
           </div>
         </div>
+
+        {/* HR Tools Section */}
+        {profile?.role === 'hr' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Data Management
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SeedPerformanceDataButton />
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Performance Insights Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
