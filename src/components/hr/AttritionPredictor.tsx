@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Users, Brain, RefreshCw, TrendingUp, Info } from 'lucide-react';
+import { AlertTriangle, Users, Brain, RefreshCw, TrendingUp, Info, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -86,6 +85,33 @@ const AttritionPredictor = () => {
     }
   });
 
+  // Clear all predictions mutation
+  const clearPredictionsMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('attrition_predictions')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Analysis Cleared",
+        description: "All previous attrition predictions have been removed.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['attrition-predictions'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to clear existing predictions. Please try again.",
+        variant: "destructive",
+      });
+      console.error('Clear predictions error:', error);
+    }
+  });
+
   // Clear old predictions function
   const clearOldPredictions = async () => {
     const { error } = await supabase
@@ -130,6 +156,10 @@ const AttritionPredictor = () => {
       console.error('Prediction error:', error);
     }
   });
+
+  const handleClearPredictions = () => {
+    clearPredictionsMutation.mutate();
+  };
 
   const handleRunPrediction = () => {
     if (selectedEmployees.length === 0) {
@@ -190,18 +220,33 @@ const AttritionPredictor = () => {
           </h2>
           <p className="text-gray-600 mt-1">Predict which employees are likely to leave using advanced Mistral AI analysis</p>
         </div>
-        <Button 
-          onClick={handleRunForAllEmployees}
-          disabled={runPredictionMutation.isPending}
-          className="flex items-center gap-2"
-        >
-          {runPredictionMutation.isPending ? (
-            <RefreshCw className="w-4 h-4 animate-spin" />
-          ) : (
-            <TrendingUp className="w-4 h-4" />
-          )}
-          Analyze All Employees
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={handleClearPredictions}
+            disabled={clearPredictionsMutation.isPending || predictions.length === 0}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            {clearPredictionsMutation.isPending ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <Trash2 className="w-4 h-4" />
+            )}
+            Clear Analysis
+          </Button>
+          <Button 
+            onClick={handleRunForAllEmployees}
+            disabled={runPredictionMutation.isPending}
+            className="flex items-center gap-2"
+          >
+            {runPredictionMutation.isPending ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <TrendingUp className="w-4 h-4" />
+            )}
+            Analyze All Employees
+          </Button>
+        </div>
       </div>
 
       {/* Prediction Methodology Info */}
@@ -336,7 +381,25 @@ const AttritionPredictor = () => {
       {/* Predictions Results */}
       <Card>
         <CardHeader>
-          <CardTitle>Latest Attrition Risk Analysis Results</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            <span>Latest Attrition Risk Analysis Results</span>
+            {predictions.length > 0 && (
+              <Button
+                onClick={handleClearPredictions}
+                disabled={clearPredictionsMutation.isPending}
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-2 text-red-600 hover:text-red-700"
+              >
+                {clearPredictionsMutation.isPending ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+                Refresh Data
+              </Button>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {loadingPredictions || runPredictionMutation.isPending ? (
