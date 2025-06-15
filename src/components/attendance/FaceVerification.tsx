@@ -29,6 +29,8 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
     retakePhoto
   } = useCameraCapture();
 
+  console.log('FaceVerification render - isCapturing:', isCapturing, 'capturedImage:', !!capturedImage, 'isStarting:', isStarting);
+
   const proceedWithoutVerification = () => {
     console.log('Proceeding without verification');
     toast({
@@ -39,28 +41,10 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
   };
 
   const renderContent = () => {
-    if (!isCapturing && !capturedImage) {
-      return (
-        <CameraControls
-          cameraError={cameraError}
-          isStarting={isStarting}
-          onStartCamera={startCamera}
-          onProceedWithoutVerification={proceedWithoutVerification}
-        />
-      );
-    }
-
-    if (isCapturing) {
-      return (
-        <CameraView
-          videoRef={videoRef}
-          onCapturePhoto={capturePhoto}
-          onStopCamera={stopCamera}
-        />
-      );
-    }
-
+    console.log('Rendering content - isCapturing:', isCapturing, 'capturedImage:', !!capturedImage);
+    
     if (capturedImage) {
+      console.log('Rendering PhotoVerification');
       return (
         <PhotoVerification
           capturedImage={capturedImage}
@@ -71,7 +55,26 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
       );
     }
 
-    return null;
+    if (isCapturing) {
+      console.log('Rendering CameraView');
+      return (
+        <CameraView
+          videoRef={videoRef}
+          onCapturePhoto={capturePhoto}
+          onStopCamera={stopCamera}
+        />
+      );
+    }
+
+    console.log('Rendering CameraControls');
+    return (
+      <CameraControls
+        cameraError={cameraError}
+        isStarting={isStarting}
+        onStartCamera={startCamera}
+        onProceedWithoutVerification={proceedWithoutVerification}
+      />
+    );
   };
 
   return (

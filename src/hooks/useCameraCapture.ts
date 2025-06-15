@@ -50,11 +50,11 @@ export const useCameraCapture = () => {
       }
     };
 
-    checkCameraSupport();
+    checkCameraSupture();
   }, []);
 
   const startCamera = useCallback(async () => {
-    console.log('Start camera button clicked');
+    console.log('Start camera function called, current isCapturing:', isCapturing);
     setIsStarting(true);
     
     try {
@@ -70,18 +70,27 @@ export const useCameraCapture = () => {
         }
       });
       
-      console.log('Camera stream obtained');
+      console.log('Camera stream obtained, setting up video element...');
       setDebugInfo('Camera access granted');
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         setStream(mediaStream);
-        setIsCapturing(true);
         
         videoRef.current.onloadedmetadata = () => {
-          console.log('Video metadata loaded');
+          console.log('Video metadata loaded, setting isCapturing to true');
+          setIsCapturing(true);
           setDebugInfo('Camera ready');
         };
+
+        // Fallback: set isCapturing after a short delay if metadata doesn't load
+        setTimeout(() => {
+          if (mediaStream.active) {
+            console.log('Fallback: Setting isCapturing to true after timeout');
+            setIsCapturing(true);
+            setDebugInfo('Camera ready (fallback)');
+          }
+        }, 1000);
       }
     } catch (error: any) {
       console.error('Error accessing camera:', error);
@@ -113,7 +122,7 @@ export const useCameraCapture = () => {
     } finally {
       setIsStarting(false);
     }
-  }, [toast]);
+  }, [toast, isCapturing]);
 
   const stopCamera = useCallback(() => {
     console.log('Stopping camera...');
@@ -164,6 +173,11 @@ export const useCameraCapture = () => {
     setDebugInfo('Ready to retake photo');
     startCamera();
   };
+
+  // Add debug logging for state changes
+  useEffect(() => {
+    console.log('State change - isCapturing:', isCapturing, 'capturedImage:', !!capturedImage, 'isStarting:', isStarting);
+  }, [isCapturing, capturedImage, isStarting]);
 
   return {
     isCapturing,
