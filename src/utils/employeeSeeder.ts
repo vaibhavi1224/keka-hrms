@@ -64,9 +64,14 @@ export async function createEmployee(employee: EmployeeData): Promise<boolean> {
     } else {
       console.log(`Successfully created employee ${employee.email}`);
       
-      // If banking details are provided, add them
-      if (employee.bankDetails && data.user_id) {
-        await createBankDetails(data.user_id, employee.bankDetails);
+      // Update the employees table with additional details if they don't exist
+      if (data.user_id) {
+        await updateEmployeeDetails(data.user_id, employee);
+        
+        // If banking details are provided, add them
+        if (employee.bankDetails) {
+          await createBankDetails(data.user_id, employee.bankDetails);
+        }
       }
       
       return true;
@@ -74,6 +79,79 @@ export async function createEmployee(employee: EmployeeData): Promise<boolean> {
   } catch (error) {
     console.error(`Error processing ${employee.email}:`, error);
     return false;
+  }
+}
+
+async function updateEmployeeDetails(userId: string, employee: EmployeeData): Promise<void> {
+  try {
+    // Check if employee record exists in employees table
+    const { data: existingEmployee } = await supabase
+      .from('employees')
+      .select('*')
+      .eq('profile_id', userId)
+      .single();
+
+    if (existingEmployee) {
+      // Update existing employee record with additional details if they are null
+      const updateData: any = {};
+      
+      if (!existingEmployee.address) {
+        updateData.address = `${Math.floor(Math.random() * 999) + 1}, ${['MG Road', 'Brigade Road', 'Commercial Street', 'Koramangala', 'Indiranagar'][Math.floor(Math.random() * 5)]}, Bangalore, Karnataka, ${560000 + Math.floor(Math.random() * 100)}`;
+      }
+      
+      if (!existingEmployee.emergency_contact_name) {
+        updateData.emergency_contact_name = `Emergency Contact ${Math.floor(Math.random() * 1000)}`;
+      }
+      
+      if (!existingEmployee.emergency_contact_phone) {
+        updateData.emergency_contact_phone = `+91${Math.floor(Math.random() * 9000000000) + 1000000000}`;
+      }
+      
+      if (!existingEmployee.bank_account_number && employee.bankDetails) {
+        updateData.bank_account_number = employee.bankDetails.account_number;
+      }
+      
+      if (!existingEmployee.bank_name && employee.bankDetails) {
+        updateData.bank_name = employee.bankDetails.bank_name;
+      }
+
+      // Only update if there are fields to update
+      if (Object.keys(updateData).length > 0) {
+        const { error } = await supabase
+          .from('employees')
+          .update(updateData)
+          .eq('profile_id', userId);
+
+        if (error) {
+          console.error(`Error updating employee details for ${userId}:`, error);
+        } else {
+          console.log(`Successfully updated employee details for ${userId}`);
+        }
+      }
+    } else {
+      // Create new employee record if it doesn't exist
+      const newEmployeeData = {
+        profile_id: userId,
+        salary: employee.salary,
+        address: `${Math.floor(Math.random() * 999) + 1}, ${['MG Road', 'Brigade Road', 'Commercial Street', 'Koramangala', 'Indiranagar'][Math.floor(Math.random() * 5)]}, Bangalore, Karnataka, ${560000 + Math.floor(Math.random() * 100)}`,
+        emergency_contact_name: `Emergency Contact ${Math.floor(Math.random() * 1000)}`,
+        emergency_contact_phone: `+91${Math.floor(Math.random() * 9000000000) + 1000000000}`,
+        bank_account_number: employee.bankDetails?.account_number || null,
+        bank_name: employee.bankDetails?.bank_name || null
+      };
+
+      const { error } = await supabase
+        .from('employees')
+        .insert(newEmployeeData);
+
+      if (error) {
+        console.error(`Error creating employee record for ${userId}:`, error);
+      } else {
+        console.log(`Successfully created employee record for ${userId}`);
+      }
+    }
+  } catch (error) {
+    console.error(`Error processing employee details for ${userId}:`, error);
   }
 }
 
