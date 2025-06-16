@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -19,7 +18,7 @@ const Auth = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -101,38 +100,7 @@ const Auth = () => {
     setGoogleLoading(true);
 
     try {
-      // First check if the user's email exists in our employees database
-      const emailToCheck = prompt('Please enter your email address to verify your employment:');
-      
-      if (!emailToCheck) {
-        setGoogleLoading(false);
-        return;
-      }
-
-      const { data: existingEmployee, error: checkError } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('email', emailToCheck.toLowerCase())
-        .single();
-
-      if (checkError || !existingEmployee) {
-        setError('This email is not registered as an employee. Please contact HR for assistance.');
-        setGoogleLoading(false);
-        return;
-      }
-
-      const redirectTo = `${window.location.origin}/`;
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo,
-          queryParams: {
-            hd: emailToCheck.split('@')[1] // Restrict to company domain if needed
-          }
-        }
-      });
-
+      const { error } = await signInWithGoogle();
       if (error) {
         setError(error.message);
       }
@@ -195,7 +163,7 @@ const Auth = () => {
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
-                {googleLoading ? 'Verifying...' : 'Sign in with Google (Employees Only)'}
+                {googleLoading ? 'Signing in...' : 'Sign in with Google'}
               </Button>
 
               <div className="relative mb-4">
@@ -311,7 +279,7 @@ const Auth = () => {
           )}
 
           <div className="mt-4 p-3 bg-blue-50 rounded-lg text-xs text-blue-700">
-            <p><strong>For Employees:</strong> Use the credentials provided by HR to sign in. Google sign-in is available only for registered employees.</p>
+            <p><strong>For Employees:</strong> Use your email credentials to sign in or sign in with Google.</p>
             <p><strong>For Testing:</strong> Click "Quick Test HR Login" to access the HR dashboard.</p>
           </div>
         </CardContent>
