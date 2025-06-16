@@ -1,13 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { toast as sonnerToast } from 'sonner';
 import FaceVerification from './FaceVerification';
 import AttendanceHeader from './AttendanceHeader';
 import TodayAttendanceCard from './TodayAttendanceCard';
 import LocationCard from './LocationCard';
 import WeeklyAttendanceCard from './WeeklyAttendanceCard';
+import { getCurrentPosition, getAddressFromCoordinates, isPositionAtOffice, PositionData } from '@/utils/geolocation';
 
 const AttendanceTracker = () => {
   const { profile } = useProfile();
@@ -20,12 +21,29 @@ const AttendanceTracker = () => {
   const [showFaceVerification, setShowFaceVerification] = useState(false);
   const [faceVerificationAction, setFaceVerificationAction] = useState<'checkin' | 'checkout'>('checkin');
   const [useFaceVerification, setUseFaceVerification] = useState(false);
+  
+  // New state variables for geolocation
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<{
+    latitude: number | null;
+    longitude: number | null;
+    isValid: boolean;
+    address: string;
+    officeName: string | null;
+  }>({
+    latitude: null,
+    longitude: null,
+    isValid: false,
+    address: 'Checking location...',
+    officeName: null
+  });
 
   useEffect(() => {
     if (profile?.id) {
       checkTodayAttendance();
       fetchWeeklyAttendance();
       checkFaceVerificationPreference();
+      checkLocation(); // Check location when component loads
     }
   }, [profile?.id]);
 
@@ -33,6 +51,50 @@ const AttendanceTracker = () => {
     const preference = localStorage.getItem('useFaceVerification');
     setUseFaceVerification(preference === 'true');
     console.log('Face verification preference:', preference);
+  };
+
+  // New function to check user's current location
+  const checkLocation = async () => {
+    setLocationLoading(true);
+    
+    try {
+      // Get user's current position
+      const position = await getCurrentPosition();
+      
+      // Check if position is at office - properly await the result
+      const officeCheck = await isPositionAtOffice(position);
+      
+      // Get human-readable address
+      const address = await getAddressFromCoordinates(position);
+      
+      // Update state with location information
+      setCurrentLocation({
+        latitude: position.latitude,
+        longitude: position.longitude,
+        isValid: officeCheck.isValid,
+        address: address,
+        officeName: officeCheck.officeName
+      });
+      
+      if (!officeCheck.isValid) {
+        sonnerToast.warning("You are not at an approved office location");
+      } else {
+        sonnerToast.success(`Location verified: ${officeCheck.officeName}`);
+      }
+    } catch (error) {
+      console.error('Location error:', error);
+      sonnerToast.error(`Location error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      setCurrentLocation({
+        latitude: null,
+        longitude: null,
+        isValid: false,
+        address: 'Failed to get location. Please check your browser permissions.',
+        officeName: null
+      });
+    } finally {
+      setLocationLoading(false);
+    }
   };
 
   const checkTodayAttendance = async () => {
@@ -83,6 +145,16 @@ const AttendanceTracker = () => {
     console.log('Performing check-in...');
     if (!profile?.id) return;
     
+    // Verify location before check-in
+    if (!currentLocation.isValid) {
+      toast({
+        title: "Location Error",
+        description: "You must be at an approved office location to check in",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(true);
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -95,7 +167,13 @@ const AttendanceTracker = () => {
           date: today,
           check_in_time: now,
           status: 'present',
-          biometric_verified: useFaceVerification
+          biometric_verified: useFaceVerification,
+          // New location fields
+          latitude: currentLocation.latitude,
+          longitude: currentLocation.longitude,
+          location_verified: currentLocation.isValid,
+          location_name: currentLocation.officeName,
+          location_address: currentLocation.address
         });
 
       if (error) throw error;
@@ -106,7 +184,7 @@ const AttendanceTracker = () => {
       console.log('Check-in successful');
       toast({
         title: "Clocked In Successfully",
-        description: `Clocked in at ${new Date().toLocaleTimeString()}${useFaceVerification ? ' (Face Verified)' : ''}`,
+        description: `Clocked in at ${new Date().toLocaleTimeString()}${useFaceVerification ? ' (Face Verified)' : ''} (Location Verified)`,
       });
     } catch (error) {
       console.error('Clock in error:', error);
@@ -124,6 +202,16 @@ const AttendanceTracker = () => {
     console.log('Performing check-out...');
     if (!profile?.id) return;
     
+    // Verify location before check-out
+    if (!currentLocation.isValid) {
+      toast({
+        title: "Location Error",
+        description: "You must be at an approved office location to check out",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(true);
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -134,7 +222,12 @@ const AttendanceTracker = () => {
         .update({
           check_out_time: now,
           updated_at: now,
-          biometric_verified_out: useFaceVerification
+          biometric_verified_out: useFaceVerification,
+          // New location fields for check-out
+          checkout_latitude: currentLocation.latitude,
+          checkout_longitude: currentLocation.longitude,
+          checkout_location_verified: currentLocation.isValid,
+          checkout_location_name: currentLocation.officeName
         })
         .eq('user_id', profile.id)
         .eq('date', today);
@@ -147,7 +240,7 @@ const AttendanceTracker = () => {
       console.log('Check-out successful');
       toast({
         title: "Clocked Out Successfully",
-        description: `Clocked out at ${new Date().toLocaleTimeString()}${useFaceVerification ? ' (Face Verified)' : ''}`,
+        description: `Clocked out at ${new Date().toLocaleTimeString()}${useFaceVerification ? ' (Face Verified)' : ''} (Location Verified)`,
       });
     } catch (error) {
       console.error('Clock out error:', error);
@@ -163,6 +256,18 @@ const AttendanceTracker = () => {
 
   const handleCheckIn = () => {
     console.log('Check-in button clicked, useFaceVerification:', useFaceVerification);
+    
+    // First verify location is valid
+    if (!currentLocation.isValid) {
+      toast({
+        title: "Location Error",
+        description: "You are not at an office location. Please go to an approved office location to check in.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Then proceed with face verification if enabled
     if (useFaceVerification) {
       console.log('Starting face verification for check-in');
       setFaceVerificationAction('checkin');
@@ -175,6 +280,18 @@ const AttendanceTracker = () => {
 
   const handleCheckOut = () => {
     console.log('Check-out button clicked, useFaceVerification:', useFaceVerification);
+    
+    // First verify location is valid
+    if (!currentLocation.isValid) {
+      toast({
+        title: "Location Error",
+        description: "You are not at an office location. Please go to an approved office location to check out.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Then proceed with face verification if enabled
     if (useFaceVerification) {
       console.log('Starting face verification for check-out');
       setFaceVerificationAction('checkout');
@@ -242,7 +359,12 @@ const AttendanceTracker = () => {
         />
 
         <div className="space-y-6">
-          <LocationCard />
+          <LocationCard 
+            isLocationValid={currentLocation.isValid}
+            onRefreshLocation={checkLocation}
+            loading={locationLoading}
+            currentAddress={currentLocation.address}
+          />
           <WeeklyAttendanceCard weeklyAttendance={weeklyAttendance} />
         </div>
       </div>
