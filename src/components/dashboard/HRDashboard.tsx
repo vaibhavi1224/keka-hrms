@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,6 @@ import HRPendingTasks from './hr/HRPendingTasks';
 import HRComplianceAlerts from './hr/HRComplianceAlerts';
 import HRDepartmentOverview from './hr/HRDepartmentOverview';
 import HRResumeProcessor from './hr/HRResumeProcessor';
-import HRAnomalyDetection from './hr/HRAnomalyDetection';
 
 const HRDashboard = () => {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -146,11 +146,10 @@ const HRDashboard = () => {
       {/* Resume Processing Center */}
       <HRResumeProcessor />
 
-      {/* Compliance Alerts, Department Overview & Anomaly Detection */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Compliance Alerts & Department Overview */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <HRComplianceAlerts />
         <HRDepartmentOverview />
-        <HRAnomalyDetection />
       </div>
 
       {/* Add Employee Modal */}
