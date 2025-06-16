@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,13 +21,17 @@ const Auth = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  // Get the intended destination or default to dashboard
+  const from = location.state?.from?.pathname || '/dashboard';
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      console.log('User is authenticated, redirecting to:', from);
+      navigate(from, { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, from]);
 
   const handleTestHRLogin = async () => {
     setError('');

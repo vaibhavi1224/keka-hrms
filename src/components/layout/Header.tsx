@@ -2,21 +2,33 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, Settings, User } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import NotificationCenter from '@/components/common/NotificationCenter';
 import HRMSLogo from '@/components/common/HRMSLogo';
 
 const Header = () => {
   const { signOut, user } = useAuth();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    const { error } = await signOut();
-    if (error) {
-      toast.error('Failed to sign out');
-    } else {
-      toast.success('Signed out successfully');
+    try {
+      console.log('Header: Starting sign out process...');
+      const { error } = await signOut();
+      
+      if (error) {
+        console.error('Header: Sign out error:', error);
+        toast.error('Failed to sign out: ' + error.message);
+      } else {
+        console.log('Header: Sign out successful, redirecting...');
+        toast.success('Signed out successfully');
+        navigate('/auth');
+      }
+    } catch (err) {
+      console.error('Header: Unexpected sign out error:', err);
+      toast.error('An unexpected error occurred while signing out');
     }
   };
 
@@ -54,7 +66,12 @@ const Header = () => {
             <Button variant="ghost" size="sm">
               <Settings className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleSignOut}
+              className="hover:bg-red-50 hover:text-red-600"
+            >
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
