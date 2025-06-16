@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { Home, Users, Calendar, FileText, DollarSign, BarChart, MessageCircle, TrendingUp } from 'lucide-react';
+import { Home, Users, Calendar, FileText, DollarSign, BarChart, MessageCircle, TrendingUp, Settings } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
 
 interface MenuItem {
@@ -67,6 +66,12 @@ const Sidebar = () => {
       label: 'HR Chat', 
       path: '/hr-chat',
       roles: ['employee', 'manager', 'hr']
+    },
+    { 
+      icon: Settings, 
+      label: 'Settings', 
+      path: '/settings',
+      roles: ['hr']
     }
   ];
 
