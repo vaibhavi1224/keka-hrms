@@ -6,6 +6,18 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+export interface OfficeLocation {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  radius_meters: number;
+  address?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -1784,6 +1796,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      office_locations: {
+        Row: OfficeLocation;
+        Insert: {
+          id?: string;
+          name: string;
+          latitude: number;
+          longitude: number;
+          radius_meters?: number;
+          address?: string;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          latitude?: number;
+          longitude?: number;
+          radius_meters?: number;
+          address?: string;
+          is_active?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
       }
     }
     Views: {
