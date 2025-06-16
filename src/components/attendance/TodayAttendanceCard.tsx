@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Clock, Camera } from 'lucide-react';
+import { Clock, Camera, MapPin, Fingerprint } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -12,6 +11,7 @@ interface TodayAttendanceCardProps {
   useBiometric: boolean;
   onCheckIn: () => void;
   onCheckOut: () => void;
+  verificationMethod: 'biometric' | 'geolocation';
 }
 
 const TodayAttendanceCard = ({
@@ -21,7 +21,8 @@ const TodayAttendanceCard = ({
   loading,
   useBiometric,
   onCheckIn,
-  onCheckOut
+  onCheckOut,
+  verificationMethod
 }: TodayAttendanceCardProps) => {
   const calculateWorkedHours = () => {
     if (checkInTime && checkOutTime) {
@@ -36,6 +37,14 @@ const TodayAttendanceCard = ({
   const getRemainingHours = () => {
     const worked = parseFloat(calculateWorkedHours());
     return Math.max(0, 8 - worked).toFixed(1);
+  };
+
+  const renderVerificationIcon = () => {
+    if (verificationMethod === 'biometric') {
+      return <Fingerprint className="w-4 h-4" />;
+    } else {
+      return <MapPin className="w-4 h-4" />;
+    }
   };
 
   return (
@@ -68,13 +77,14 @@ const TodayAttendanceCard = ({
               disabled={loading}
               className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg flex items-center gap-2"
             >
-              {useBiometric && <Camera className="w-4 h-4" />}
+              {renderVerificationIcon()}
               {loading ? 'Checking In...' : 'Check In'}
             </Button>
           ) : (
             <div className="space-y-4 text-center">
-              <div className="text-green-600 font-medium">
-                Checked in at {checkInTime}
+              <div className="text-green-600 font-medium flex items-center justify-center gap-1">
+                {renderVerificationIcon()}
+                <span>Checked in at {checkInTime}</span>
               </div>
               <Button 
                 onClick={onCheckOut}
@@ -82,7 +92,7 @@ const TodayAttendanceCard = ({
                 variant="destructive"
                 className="px-8 py-3 text-lg flex items-center gap-2"
               >
-                {useBiometric && <Camera className="w-4 h-4" />}
+                {renderVerificationIcon()}
                 {loading ? 'Checking Out...' : 'Check Out'}
               </Button>
             </div>
@@ -109,6 +119,9 @@ const TodayAttendanceCard = ({
             <div className="text-sm font-medium text-gray-700">Today's Summary</div>
             <div className="text-xs text-gray-600 mt-1">
               Check In: {checkInTime} | Check Out: {checkOutTime}
+            </div>
+            <div className="text-xs text-gray-600 mt-1">
+              Verification Method: {verificationMethod === 'biometric' ? 'Biometric' : 'Geolocation'}
             </div>
           </div>
         )}
