@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Camera } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -15,29 +14,45 @@ interface FaceVerificationProps {
 
 const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
   const { toast } = useToast();
+  const [manualVerificationAttempted, setManualVerificationAttempted] = useState(false);
   const {
     isCapturing,
     capturedImage,
     cameraError,
     debugInfo,
     isStarting,
+    retryCount,
     videoRef,
     canvasRef,
     startCamera,
     stopCamera,
     capturePhoto,
-    retakePhoto
+    retakePhoto,
+    createFallbackImage,
+    setCapturedImage
   } = useCameraCapture();
 
   console.log('FaceVerification render - isCapturing:', isCapturing, 'capturedImage:', !!capturedImage, 'isStarting:', isStarting);
 
   const proceedWithoutVerification = () => {
     console.log('Proceeding without verification');
+    setManualVerificationAttempted(true);
     toast({
       title: "Manual Check-in",
       description: `Proceeding with manual ${action === 'checkin' ? 'check-in' : 'check-out'}.`,
     });
     onSuccess();
+  };
+
+  const handleFallbackVerification = () => {
+    console.log('Using fallback verification');
+    // Create a fallback image and proceed
+    if (createFallbackImage) {
+      const fallbackImg = createFallbackImage();
+      setCapturedImage(fallbackImg);
+    } else {
+      proceedWithoutVerification();
+    }
   };
 
   const renderContent = () => {
@@ -71,8 +86,10 @@ const FaceVerification = ({ onSuccess, action }: FaceVerificationProps) => {
       <CameraControls
         cameraError={cameraError}
         isStarting={isStarting}
+        retryCount={retryCount}
         onStartCamera={startCamera}
         onProceedWithoutVerification={proceedWithoutVerification}
+        createFallbackImage={createFallbackImage}
       />
     );
   };
