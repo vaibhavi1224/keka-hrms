@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,7 +33,7 @@ interface AnomalyResult {
 
 const AnomalyDetector = () => {
   const [detectionType, setDetectionType] = useState<string>('all');
-  const [selectedEmployee, setSelectedEmployee] = useState<string>('all');
+  const [selectedEmployee, setSelectedEmployee] = useState<string>('');
   const [timeRange, setTimeRange] = useState<number>(90);
   const [detectionResult, setDetectionResult] = useState<AnomalyResult | null>(null);
 
@@ -58,7 +59,7 @@ const AnomalyDetector = () => {
       const { data, error } = await supabase.functions.invoke('anomaly-detector', {
         body: {
           detectionType,
-          employeeId: selectedEmployee === 'all' ? null : selectedEmployee,
+          employeeId: selectedEmployee || null,
           timeRange
         }
       });
@@ -131,7 +132,7 @@ const AnomalyDetector = () => {
                   <SelectValue placeholder="All employees" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Employees</SelectItem>
+                  <SelectItem value="">All Employees</SelectItem>
                   {employees.map((emp) => (
                     <SelectItem key={emp.id} value={emp.id}>
                       {emp.first_name} {emp.last_name}
