@@ -22,6 +22,9 @@ const AttendanceTracker = () => {
   const [faceVerificationAction, setFaceVerificationAction] = useState<'checkin' | 'checkout'>('checkin');
   const [useFaceVerification, setUseFaceVerification] = useState(false);
   
+  // New state variable for verification method preference
+  const [verificationMethod, setVerificationMethod] = useState<'biometric' | 'geolocation'>('geolocation');
+  
   // New state variables for geolocation
   const [locationLoading, setLocationLoading] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{
@@ -43,6 +46,7 @@ const AttendanceTracker = () => {
       checkTodayAttendance();
       fetchWeeklyAttendance();
       checkFaceVerificationPreference();
+      checkVerificationMethodPreference(); // Load verification method preference
       checkLocation(); // Check location when component loads
     }
   }, [profile?.id]);
@@ -51,6 +55,32 @@ const AttendanceTracker = () => {
     const preference = localStorage.getItem('useFaceVerification');
     setUseFaceVerification(preference === 'true');
     console.log('Face verification preference:', preference);
+  };
+
+  // New function to check and load verification method preference
+  const checkVerificationMethodPreference = () => {
+    const preference = localStorage.getItem('verificationMethod') as 'biometric' | 'geolocation' | null;
+    if (preference) {
+      setVerificationMethod(preference);
+      console.log('Verification method preference:', preference);
+    }
+  };
+
+  // New function to update verification method preference
+  const updateVerificationMethod = (method: 'biometric' | 'geolocation') => {
+    setVerificationMethod(method);
+    localStorage.setItem('verificationMethod', method);
+    
+    // If biometric is selected, also enable face verification
+    if (method === 'biometric') {
+      setUseFaceVerification(true);
+      localStorage.setItem('useFaceVerification', 'true');
+    }
+    
+    toast({
+      title: `Verification Method Updated`,
+      description: `You will now use ${method === 'biometric' ? 'biometric verification' : 'geolocation validation'} for attendance.`,
+    });
   };
 
   // New function to check user's current location
@@ -143,10 +173,18 @@ const AttendanceTracker = () => {
 
   const performCheckIn = async () => {
     console.log('Performing check-in...');
-    if (!profile?.id) return;
+    if (!profile?.id) {
+      console.error('No profile ID available');
+      toast({
+        title: "Clock In Failed",
+        description: "User profile not loaded. Please refresh the page.",
+        variant: "destructive"
+      });
+      return;
+    }
     
-    // Verify location before check-in
-    if (!currentLocation.isValid) {
+    // Only verify location if using geolocation method
+    if (verificationMethod === 'geolocation' && !currentLocation.isValid) {
       toast({
         title: "Location Error",
         description: "You must be at an approved office location to check in",
@@ -160,37 +198,65 @@ const AttendanceTracker = () => {
       const today = new Date().toISOString().split('T')[0];
       const now = new Date().toISOString();
       
-      const { error } = await supabase
+      // For record-keeping, determine which verification method was used
+      const usingBiometric = verificationMethod === 'biometric'; // This means biometric was used
+      
+      console.log('Preparing attendance data:', {
+        userId: profile.id,
+        date: today,
+        timestamp: now
+      });
+      
+      // Use only the core fields that are definitely in the database schema
+      // to avoid any potential type mismatches
+      const { data, error } = await supabase
         .from('attendance')
         .upsert({
           user_id: profile.id,
           date: today,
           check_in_time: now,
           status: 'present',
-          biometric_verified: useFaceVerification,
-          // New location fields
-          latitude: currentLocation.latitude,
-          longitude: currentLocation.longitude,
-          location_verified: currentLocation.isValid,
-          location_name: currentLocation.officeName,
-          location_address: currentLocation.address
-        });
+          biometric_verified: usingBiometric,
+          // Omitting potentially problematic fields
+          notes: `Check-in via ${verificationMethod} verification`
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error during check-in:', error);
+        throw error;
+      }
 
+      console.log('Check-in successful, data:', data);
       setIsCheckedIn(true);
       setCheckInTime(new Date().toLocaleTimeString());
       setShowFaceVerification(false);
-      console.log('Check-in successful');
+      
+      let verificationMsg = '';
+      if (verificationMethod === 'biometric') {
+        verificationMsg = ' (Face Verified)';
+      } else {
+        verificationMsg = ' (Location Verified)';
+      }
+      
       toast({
         title: "Clocked In Successfully",
-        description: `Clocked in at ${new Date().toLocaleTimeString()}${useFaceVerification ? ' (Face Verified)' : ''} (Location Verified)`,
+        description: `Clocked in at ${new Date().toLocaleTimeString()}${verificationMsg}`,
       });
     } catch (error) {
       console.error('Clock in error:', error);
+      // Log detailed error information
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      } else {
+        console.error('Unknown error type:', typeof error);
+      }
+      
+      // Show error toast to user
       toast({
         title: "Clock In Failed",
-        description: "Failed to clock in. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to clock in. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -200,10 +266,18 @@ const AttendanceTracker = () => {
 
   const performCheckOut = async () => {
     console.log('Performing check-out...');
-    if (!profile?.id) return;
+    if (!profile?.id) {
+      console.error('No profile ID available');
+      toast({
+        title: "Clock Out Failed",
+        description: "User profile not loaded. Please refresh the page.",
+        variant: "destructive"
+      });
+      return;
+    }
     
-    // Verify location before check-out
-    if (!currentLocation.isValid) {
+    // Only verify location if using geolocation method
+    if (verificationMethod === 'geolocation' && !currentLocation.isValid) {
       toast({
         title: "Location Error",
         description: "You must be at an approved office location to check out",
@@ -217,36 +291,62 @@ const AttendanceTracker = () => {
       const today = new Date().toISOString().split('T')[0];
       const now = new Date().toISOString();
       
+      // For record-keeping, determine which verification method was used
+      const usingBiometric = verificationMethod === 'biometric';
+      
+      console.log('Preparing checkout data:', {
+        userId: profile.id,
+        date: today,
+        timestamp: now
+      });
+      
+      // Use only the core fields that are definitely in the database schema
       const { error } = await supabase
         .from('attendance')
         .update({
           check_out_time: now,
           updated_at: now,
-          biometric_verified_out: useFaceVerification,
-          // New location fields for check-out
-          checkout_latitude: currentLocation.latitude,
-          checkout_longitude: currentLocation.longitude,
-          checkout_location_verified: currentLocation.isValid,
-          checkout_location_name: currentLocation.officeName
+          biometric_verified_out: usingBiometric,
+          // Use notes field to store verification method info
+          notes: `Check-out via ${verificationMethod} verification`
         })
         .eq('user_id', profile.id)
         .eq('date', today);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error during check-out:', error);
+        throw error;
+      }
 
       setIsCheckedIn(false);
       setCheckOutTime(new Date().toLocaleTimeString());
       setShowFaceVerification(false);
       console.log('Check-out successful');
+      
+      let verificationMsg = '';
+      if (verificationMethod === 'biometric') {
+        verificationMsg = ' (Face Verified)';
+      } else {
+        verificationMsg = ' (Location Verified)';
+      }
+      
       toast({
         title: "Clocked Out Successfully",
-        description: `Clocked out at ${new Date().toLocaleTimeString()}${useFaceVerification ? ' (Face Verified)' : ''} (Location Verified)`,
+        description: `Clocked out at ${new Date().toLocaleTimeString()}${verificationMsg}`,
       });
     } catch (error) {
       console.error('Clock out error:', error);
+      // Log detailed error information
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      } else {
+        console.error('Unknown error type:', typeof error);
+      }
+      
       toast({
         title: "Clock Out Failed",
-        description: "Failed to clock out. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to clock out. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -255,50 +355,50 @@ const AttendanceTracker = () => {
   };
 
   const handleCheckIn = () => {
-    console.log('Check-in button clicked, useFaceVerification:', useFaceVerification);
+    console.log('Check-in button clicked, verification method:', verificationMethod);
     
-    // First verify location is valid
-    if (!currentLocation.isValid) {
-      toast({
-        title: "Location Error",
-        description: "You are not at an office location. Please go to an approved office location to check in.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Then proceed with face verification if enabled
-    if (useFaceVerification) {
+    if (verificationMethod === 'geolocation') {
+      // First verify location is valid
+      if (!currentLocation.isValid) {
+        toast({
+          title: "Location Error",
+          description: "You are not at an office location. Please go to an approved office location to check in.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // If location is valid, proceed with check-in
+      performCheckIn();
+    } else if (verificationMethod === 'biometric') {
+      // Start face verification process
       console.log('Starting face verification for check-in');
       setFaceVerificationAction('checkin');
       setShowFaceVerification(true);
-    } else {
-      console.log('Proceeding with normal check-in');
-      performCheckIn();
     }
   };
 
   const handleCheckOut = () => {
-    console.log('Check-out button clicked, useFaceVerification:', useFaceVerification);
+    console.log('Check-out button clicked, verification method:', verificationMethod);
     
-    // First verify location is valid
-    if (!currentLocation.isValid) {
-      toast({
-        title: "Location Error",
-        description: "You are not at an office location. Please go to an approved office location to check out.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Then proceed with face verification if enabled
-    if (useFaceVerification) {
+    if (verificationMethod === 'geolocation') {
+      // First verify location is valid
+      if (!currentLocation.isValid) {
+        toast({
+          title: "Location Error",
+          description: "You are not at an office location. Please go to an approved office location to check out.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // If location is valid, proceed with check-out
+      performCheckOut();
+    } else if (verificationMethod === 'biometric') {
+      // Start face verification process
       console.log('Starting face verification for check-out');
       setFaceVerificationAction('checkout');
       setShowFaceVerification(true);
-    } else {
-      console.log('Proceeding with normal check-out');
-      performCheckOut();
     }
   };
 
@@ -345,6 +445,8 @@ const AttendanceTracker = () => {
       <AttendanceHeader 
         useBiometric={useFaceVerification}
         onToggleBiometric={toggleFaceVerificationPreference}
+        verificationMethod={verificationMethod}
+        onChangeVerificationMethod={updateVerificationMethod}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -353,9 +455,10 @@ const AttendanceTracker = () => {
           checkInTime={checkInTime}
           checkOutTime={checkOutTime}
           loading={loading}
-          useBiometric={useFaceVerification}
+          useBiometric={verificationMethod === 'biometric'}
           onCheckIn={handleCheckIn}
           onCheckOut={handleCheckOut}
+          verificationMethod={verificationMethod}
         />
 
         <div className="space-y-6">
@@ -364,6 +467,7 @@ const AttendanceTracker = () => {
             onRefreshLocation={checkLocation}
             loading={locationLoading}
             currentAddress={currentLocation.address}
+            isRequired={verificationMethod === 'geolocation'}
           />
           <WeeklyAttendanceCard weeklyAttendance={weeklyAttendance} />
         </div>
