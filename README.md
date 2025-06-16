@@ -1,3 +1,4 @@
+# ✅README.md
 
 # AI-Enhanced HRMS Platform 🚀
 
@@ -66,8 +67,8 @@ A comprehensive Human Resource Management System (HRMS) built with modern web te
 
 1. **Clone the repository**
 ```bash
-git clone <YOUR_GIT_URL>
-cd <YOUR_PROJECT_NAME>
+git clone https://github.com/vaibhavi1224/keka-hrms.git
+cd keka-hrms
 ```
 
 2. **Install dependencies**
@@ -99,7 +100,7 @@ After setting up the database with seed data:
 
 ## 📱 Live Application
 
-🌐 **Deployed Application**: [https://yoursite.lovable.app](https://yoursite.lovable.app)
+🌐 **Deployed Application**: https://keka-hrms.lovable.app
 
 > Note: Replace with your actual deployment URL after publishing
 
