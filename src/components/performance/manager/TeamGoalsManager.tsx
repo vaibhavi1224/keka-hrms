@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,14 +32,71 @@ const TeamGoalsManager = () => {
     queryFn: async () => {
       if (!profile?.id) return [];
 
-      const { data, error } = await supabase
+      // Debug
+      console.log('Manager ID:', profile.id);
+      console.log('Manager role:', profile.role);
+      console.log('Manager department:', profile.department);
+
+      // First try to get direct reports (employees directly managed by this manager)
+      const { data: directReports, error } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, employee_id')
         .eq('manager_id', profile.id)
         .eq('is_active', true);
 
-      if (error) throw error;
-      return data || [];
+      if (error) {
+        console.error('Error fetching direct reports:', error);
+        throw error;
+      }
+      
+      console.log('Direct reports fetched:', directReports?.length || 0);
+      
+      // If direct reports found, return them
+      if (directReports && directReports.length > 0) {
+        return directReports;
+      }
+      
+      // Second fallback: If no direct reports found and manager has a department, get all employees in that department
+      if (profile.department) {
+        console.log('No direct reports found, fetching department members');
+        
+        const { data: departmentMembers, error: deptError } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, employee_id')
+          .eq('department', profile.department)
+          .eq('is_active', true)
+          .neq('id', profile.id); // Exclude the manager themselves
+          
+        if (deptError) {
+          console.error('Error fetching department members:', deptError);
+          throw deptError;
+        }
+        
+        console.log('Department members fetched:', departmentMembers?.length || 0);
+        
+        // If department members found, return them
+        if (departmentMembers && departmentMembers.length > 0) {
+          return departmentMembers;
+        }
+      }
+      
+      // Final fallback: Get all employees with role 'employee'
+      console.log('No team or department members found, fetching all employees');
+      
+      const { data: allEmployees, error: allError } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, employee_id')
+        .eq('role', 'employee')
+        .eq('is_active', true)
+        .neq('id', profile.id);
+        
+      if (allError) {
+        console.error('Error fetching all employees:', allError);
+        throw allError;
+      }
+      
+      console.log('All employees fetched:', allEmployees?.length || 0);
+      return allEmployees || [];
     },
     enabled: !!profile?.id
   });
