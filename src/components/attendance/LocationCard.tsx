@@ -8,13 +8,15 @@ interface LocationCardProps {
   onRefreshLocation?: () => void;
   loading?: boolean;
   currentAddress?: string;
+  isRequired?: boolean;
 }
 
 const LocationCard = ({ 
   isLocationValid = false, 
   onRefreshLocation = () => {}, 
   loading = false,
-  currentAddress = ''
+  currentAddress = '',
+  isRequired = false
 }: LocationCardProps) => {
   return (
     <Card className={isLocationValid ? 'border-green-500' : 'border-amber-500'}>
@@ -22,6 +24,9 @@ const LocationCard = ({
         <CardTitle className="flex items-center space-x-2">
           <MapPin className={`w-5 h-5 ${isLocationValid ? 'text-green-500' : 'text-amber-500'}`} />
           <span>Location</span>
+          {isRequired && (
+            <span className="text-xs font-normal px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full">Required</span>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -56,6 +61,12 @@ const LocationCard = ({
               'Refresh Location'
             )}
           </Button>
+          
+          {isRequired && !isLocationValid && (
+            <div className="text-xs text-red-600 mt-2">
+              Location verification is required for your chosen attendance method
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
